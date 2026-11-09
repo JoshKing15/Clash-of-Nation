@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clash of Nations · Clip Editor</title>
+<style>
+:root{color-scheme:dark;--bg:#101115;--panel:#181a20;--edge:#30333e;--ink:#f5f5f7;--muted:#b0b4c2;--accent:#bff58a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 80% 0%,#262b22,transparent 45%),var(--bg);color:var(--ink);font:15px system-ui,sans-serif}
+main{max-width:1160px;margin:auto;padding:30px 24px}
+header,.transport,.buttons,.actions,.check{display:flex;align-items:center;gap:10px}
+header{justify-content:space-between;border-bottom:1px solid var(--edge);padding-bottom:22px}
+.brand,.badge{font-size:.75rem;letter-spacing:.15em;font-weight:750}
+.mark,.play{color:var(--accent);margin-right:8px}
+.badge{color:var(--accent);text-align:right}
+h1{font-size:clamp(2.4rem,6vw,4.2rem);letter-spacing:-.06em;margin:27px 0 0}
+.intro,p,small,footer,#filename{color:var(--muted)}
+.intro{margin:8px 0 23px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(0,1fr);gap:16px;align-items:start}
+.panel{border:1px solid var(--edge);border-radius:16px;background:var(--panel);padding:16px;min-width:0}
+.screen{height:clamp(230px,38vw,455px);background:#090a0d;border-radius:11px;display:grid;place-items:center;overflow:hidden}
+video,canvas{width:100%;height:100%;min-height:0;object-fit:contain}
+#empty{text-align:center;display:grid;gap:8px}
+.play{font-size:1.6rem;margin:0 0 6px}
+.transport{margin:12px 0}
+.transport input{flex:1;min-width:0;padding:0}
+output{font-variant-numeric:tabular-nums;font-size:.75rem;white-space:nowrap;color:var(--muted)}
+button,input,select,.upload{font:inherit;color:inherit;border:1px solid #414554;background:#242731;border-radius:8px;padding:8px 10px}
+button,.upload{cursor:pointer;font-size:.83rem;font-weight:650}
+button:hover:not(:disabled),.upload:hover{border-color:var(--accent)}
+button:disabled,fieldset:disabled{opacity:.56}
+button:disabled{cursor:default}
+.upload{display:inline-block;position:relative;overflow:hidden}
+.upload:focus-within{outline:2px solid var(--accent)}
+.upload input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+#filename{font-size:.78rem;margin-left:8px;overflow-wrap:anywhere}
+fieldset{min-width:0;border:0;border-bottom:1px solid var(--edge);margin:0 0 15px;padding:0 0 14px}
+legend{font-weight:750;margin-bottom:10px;padding:0}
+legend span{color:var(--accent);font-size:.75rem;margin-right:6px}
+fieldset p{font-size:.8rem;margin:0 0 10px}
+.times,.censorTimes{display:grid;gap:8px;align-items:end}
+.times{grid-template-columns:minmax(0,1fr) auto}
+.censorTimes{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:9px}
+fieldset label{font-size:.8rem;color:var(--muted)}
+fieldset label input:not([type=checkbox]),select{display:block;width:100%;margin-top:4px}
+.check{margin-top:12px}
+#hookTimes{margin-top:8px}
+input{accent-color:var(--accent)}
+.buttons,.actions{flex-wrap:wrap}
+.primary{background:var(--accent);color:#151d12;border-color:var(--accent)}
+ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:5px}
+li{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.8rem}
+li button{padding:4px 7px}
+#status,footer{font-size:.8rem}
+#status{margin:10px 0 0}
+#download{display:inline-block;margin-top:12px;color:var(--accent)}
+progress{width:100%;margin-top:12px;accent-color:var(--accent)}
+footer{margin-top:15px}
+[hidden]{display:none!important}
+@media(max-width:760px){main{padding:19px 13px}.workspace{grid-template-columns:1fr}.badge{font-size:.63rem}.screen{height:clamp(220px,60vw,380px)}}
+</style>
+
+</head>
+<body>
+<main>
+<header><div class="brand"><span class="mark">▶</span> CLASH OF NATIONS</div><span class="badge">LOCAL VIDEO PROCESSING</span></header>
+<h1>Clip editor</h1>
+<p class="intro">Start where the conflict begins. Bleep or mute selected words, then export a clean cut.</p>
+<div class="workspace">
+<section class="panel viewer" aria-label="Source video">
+<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
+<div class="transport">
+<button type="button" id="play" data-edit disabled>Play source</button>
+<input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
+<output id="clock">0.00 / 0.00 s</output>
+</div>
+<label class="upload">Choose video<input type="file" id="file" accept="video/*,.mov,.mkv,.mp4,.webm"></label>
+<span id="filename">MP4 or another format your browser can play</span>
+</section>
+<section class="panel controls" aria-label="Editing controls">
+<fieldset id="edit" disabled>
+<legend><span>01</span> Set the cut</legend>
+<div class="times">
+<label>Conflict starts (s)<input type="number" id="start" min="0" step=".01" value="0"></label><button type="button" data-mark="start">Use playhead</button>
+<label>Clip ends (s)<input type="number" id="end" min="0" step=".01" value="0"></label><button type="button" data-mark="end">Use playhead</button>
+</div>
+<label class="check"><input type="checkbox" id="hook"> Add a teaser before the conflict starts</label>
+<div class="times" id="hookTimes" hidden>
+<label>Teaser starts (s)<input type="number" id="hookStart" min="0" step=".01" value="0"></label><button type="button" data-mark="hookStart">Use playhead</button>
+<label>Teaser ends (s)<input type="number" id="hookEnd" min="0" step=".01" value="0"></label><button type="button" data-mark="hookEnd">Use playhead</button>
+</div>
+</fieldset>
+<fieldset id="censor" disabled>
+<legend><span>02</span> Censor words</legend>
+<p>Set a start and end for each word using the source time. The same edit applies if the word plays again in the teaser.</p>
+<div class="censorTimes">
+<label>From (s)<input type="number" id="from" min="0" step=".01" value="0"></label>
+<label>To (s)<input type="number" id="to" min="0" step=".01" value=".5"></label>
+<label>Sound<select id="mode"><option value="bleep">Bleep</option><option value="mute">Mute</option></select></label>
+</div>
+<div class="buttons"><button type="button" data-mark="from">Mark from</button><button type="button" data-mark="to">Mark to</button><button type="button" id="add">Add censor</button></div>
+<ul id="ranges"></ul>
+</fieldset>
+<div class="actions"><button type="button" id="preview" data-edit disabled>Preview cut</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
+<progress id="progress" max="1" value="0" hidden></progress>
+<p role="status" id="status">Choose a video to unlock the editor.</p>
+<a id="download" hidden>Download edited video</a>
+</section>
+</div>
+<footer>Source times are in seconds. Use headphones to check each bleep before exporting.</footer>
+</main>
+<script>
+'use strict';
+
+const byId = id => document.getElementById(id);
+const video = byId('video');
+const canvas = byId('canvas');
+const ctx = canvas.getContext('2d', {alpha: false});
+const watermark = new Image();
+watermark.src = 'assets/clash-of-nations-watermark.png';
+const status = byId('status');
+const download = byId('download');
+const progress = byId('progress');
+const editControls = document.querySelectorAll('[data-edit], fieldset');
+const ranges = [];
+let sourceUrl;
+let exportUrl;
+let graph;
+let loaded = false;
+let running;
+
+const say = message => { status.textContent = message; };
+const seconds = value => value.toFixed(2);
+const valueOf = id => byId(id).valueAsNumber;
+
+function setControls() {
+  for (const control of editControls) control.disabled = !loaded || !!running;
+  byId('file').disabled = !!running;
+  byId('stop').hidden = !running;
+}
+
+function updateClock() {
+  const duration = Number.isFinite(video.duration) ? video.duration : 0;
+  byId('seek').value = video.currentTime;
+  byId('clock').value = seconds(video.currentTime) + ' / ' + seconds(duration) + ' s';
+}
+
+function clearDownload() {
+  if (exportUrl) URL.revokeObjectURL(exportUrl);
+  exportUrl = undefined;
+  download.hidden = true;
+  download.removeAttribute('href');
+}
+
+byId('file').addEventListener('change', event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  video.pause();
+  loaded = false;
+  setControls();
+  clearDownload();
+  ranges.length = 0;
+  renderRanges();
+  byId('hook').checked = false;
+  byId('hookTimes').hidden = true;
+  if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+  sourceUrl = URL.createObjectURL(file);
+  byId('filename').textContent = file.name;
+  say('Loading video…');
+  video.hidden = true;
+  byId('empty').hidden = false;
+  video.src = sourceUrl;
+  video.load();
+  event.target.value = '';
+});
+
+video.addEventListener('loadedmetadata', () => {
+  if (!Number.isFinite(video.duration) || !video.videoWidth || video.duration <= 0) {
+    say('Choose a video file with a readable picture and duration.');
+    return;
+  }
+  loaded = true;
+  video.hidden = false;
+  byId('empty').hidden = true;
+  const duration = video.duration;
+  byId('seek').max = duration;
+  for (const id of ['start', 'end', 'hookStart', 'hookEnd', 'from', 'to']) {
+    byId(id).max = duration;
+  }
+  byId('start').value = 0;
+  byId('end').value = duration;
+  byId('hookStart').value = seconds(Math.max(0, duration - 3));
+  byId('hookEnd').value = duration;
+  byId('from').value = 0;
+  byId('to').value = Math.min(.5, duration);
+  setControls();
+  updateClock();
+  say('Find the start of the conflict and select Use playhead.');
+});
+
+video.addEventListener('error', () => {
+  loaded = false;
+  setControls();
+  running?.abort();
+  say('This browser could not read the video. Try a standard H.264 MP4.');
+});
+video.addEventListener('timeupdate', updateClock);
+video.addEventListener('play', () => { byId('play').textContent = 'Pause source'; });
+video.addEventListener('pause', () => { byId('play').textContent = 'Play source'; });
+byId('seek').addEventListener('input', event => { video.currentTime = Number(event.target.value); });
+
+function audioGraph() {
+  if (graph) return graph;
+  const Audio = window.AudioContext || window.webkitAudioContext;
+  const audio = new Audio();
+  const voice = audio.createGain();
+  const tone = audio.createGain();
+  const monitor = audio.createGain();
+  const output = audio.createMediaStreamDestination();
+  const oscillator = audio.createOscillator();
+  oscillator.frequency.value = 880;
+  tone.gain.value = 0;
+  audio.createMediaElementSource(video).connect(voice);
+  oscillator.connect(tone);
+  for (const input of [voice, tone]) {
+    input.connect(monitor);
+    input.connect(output);
+  }
+  monitor.connect(audio.destination);
+  oscillator.start();
+  graph = {audio, voice, tone, monitor, output};
+  return graph;
+}
+
+byId('play').addEventListener('click', async () => {
+  if (!video.paused) return video.pause();
+  try {
+    const {audio} = audioGraph();
+    await audio.resume();
+    await video.play();
+  } catch {
+    say('Source playback could not start. Try selecting the video again.');
+  }
+});
+
+byId('hook').addEventListener('change', event => {
+  byId('hookTimes').hidden = !event.target.checked;
+});
+for (const button of document.querySelectorAll('[data-mark]')) {
+  button.addEventListener('click', () => {
+    video.pause();
+    const target = byId(button.dataset.mark);
+    target.value = Math.min(video.duration, Number(seconds(video.currentTime)));
+  });
+}
+
+function readInterval(start, end, label) {
+  const from = valueOf(start);
+  const to = valueOf(end);
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from < 0 ||
+      to > video.duration + .005 || to <= from || from >= video.duration) {
+    throw new Error(label + ' needs a valid start and a later end within the video.');
+  }
+  return {from, to: Math.min(to, video.duration)};
+}
+
+function renderRanges() {
+  const list = byId('ranges');
+  list.replaceChildren();
+  for (const range of ranges) {
+    const item = document.createElement('li');
+    const label = document.createElement('span');
+    label.textContent = seconds(range.from) + '–' + seconds(range.to) + ' s · ' + range.mode;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.setAttribute('aria-label', 'Remove ' + label.textContent);
+    remove.addEventListener('click', () => {
+      ranges.splice(ranges.indexOf(range), 1);
+      renderRanges();
+    });
+    item.append(label, remove);
+    list.append(item);
+  }
+}
+
+byId('add').addEventListener('click', () => {
+  try {
+    const interval = readInterval('from', 'to', 'The censor');
+    ranges.push({...interval, mode: byId('mode').value});
+    ranges.sort((a, b) => a.from - b.from);
+    renderRanges();
+    say('Censor added. Preview the cut to check the timing.');
+  } catch (error) {
+    say(error.message);
+  }
+});
+
+function draw(teaser) {
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const margin = Math.min(canvas.width, canvas.height) * .04;
+  const watermarkWidth = canvas.width * .15;
+  const watermarkHeight = watermarkWidth * watermark.naturalHeight / watermark.naturalWidth;
+  if (!teaser) {
+    ctx.drawImage(watermark, margin, margin, watermarkWidth, watermarkHeight);
+    return;
+  }
+  ctx.drawImage(watermark, canvas.width - margin - watermarkWidth, margin, watermarkWidth, watermarkHeight);
+  const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * .037));
+  ctx.font = 'bold ' + size + 'px system-ui';
+  const text = 'MOMENTS LATER';
+  ctx.fillStyle = '#11151a';
+  ctx.fillRect(size, size, ctx.measureText(text).width + size, size * 1.7);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, size * 1.5, size * 2.17);
+}
+
+function seekTo(time, signal) {
+  signal.throwIfAborted();
+  if (Math.abs(video.currentTime - time) < .002 && !video.seeking && video.readyState >= 2) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => finish(new Error('The video could not seek to that point.')), 8000);
+    function finish(error) {
+      clearTimeout(timer);
+      video.removeEventListener('seeked', ready);
+      signal.removeEventListener('abort', cancel);
+      if (error) reject(error);
+      else resolve();
+    }
+    function ready() { finish(); }
+    function cancel() { finish(signal.reason); }
+    video.addEventListener('seeked', ready, {once: true});
+    signal.addEventListener('abort', cancel, {once: true});
+    video.currentTime = time;
+  });
+}
+
+function setAudio(time) {
+  // Pad each word on both sides to cover media clock and frame timing differences.
+  const active = ranges.filter(range => time >= range.from - .07 && time < range.to + .05);
+  graph.voice.gain.value = active.length ? 0 : 1;
+  graph.tone.gain.value = active.length && active.every(range => range.mode === 'bleep') ? .13 : 0;
+}
+
+function playSegment(segment, onTick, signal) {
+  return new Promise((resolve, reject) => {
+    let interval;
+    function finish(error) {
+      clearInterval(interval);
+      video.pause();
+      graph.voice.gain.value = 0;
+      graph.tone.gain.value = 0;
+      signal.removeEventListener('abort', cancel);
+      if (error) reject(error);
+      else resolve();
+    }
+    function cancel() { finish(signal.reason); }
+    function tick() {
+      const time = video.currentTime;
+      if (video.ended || time >= segment.to) return finish();
+      setAudio(time);
+      if (video.readyState >= 2) draw(segment.teaser);
+      onTick(time);
+    }
+    signal.addEventListener('abort', cancel, {once: true});
+    tick();
+    if (video.currentTime >= segment.to || signal.aborted) return;
+    interval = setInterval(tick, 10);
+    video.play().catch(finish);
+  });
+}
+
+function makeRecorder() {
+  if (!window.MediaRecorder || !canvas.captureStream) {
+    throw new Error('Video export is unavailable in this browser. Try desktop Chrome or Edge.');
+  }
+  const picture = canvas.captureStream(30);
+  const stream = new MediaStream([...picture.getVideoTracks(), ...graph.output.stream.getAudioTracks()]);
+  const type = [
+    'video/mp4;codecs=avc1.42001f,mp4a.40.2',
+    'video/webm;codecs=vp8,opus',
+    'video/mp4',
+    'video/webm'
+  ].find(format => MediaRecorder.isTypeSupported(format));
+  try {
+    const recorder = new MediaRecorder(stream, {mimeType: type || undefined, videoBitsPerSecond: 6500000});
+    const chunks = [];
+    recorder.addEventListener('dataavailable', event => {
+      if (event.data.size) chunks.push(event.data);
+    });
+    const finished = new Promise(resolve => {
+      recorder.addEventListener('stop', () => resolve(new Blob(chunks, {type: recorder.mimeType})), {once: true});
+    });
+    recorder.addEventListener('error', () => running?.abort(new Error('The browser could not finish recording.')));
+    return {recorder, finished, picture};
+  } catch (error) {
+    picture.getTracks().forEach(track => track.stop());
+    throw error;
+  }
+}
+
+async function run(exporting) {
+  if (!loaded || running) return;
+  let segments;
+  try {
+    const main = readInterval('start', 'end', 'The main cut');
+    segments = byId('hook').checked
+      ? [{...readInterval('hookStart', 'hookEnd', 'The teaser'), teaser: true}, main]
+      : [main];
+  } catch (error) {
+    say(error.message);
+    return;
+  }
+  const job = new AbortController();
+  running = job;
+  const {signal} = job;
+  const originalTime = video.currentTime;
+  let recording;
+  let elapsed = 0;
+  const duration = segments.reduce((sum, segment) => sum + segment.to - segment.from, 0);
+  setControls();
+  if (exporting) clearDownload();
+  progress.value = 0;
+  progress.hidden = false;
+  say(exporting ? 'Exporting in real time. Keep this tab visible.' : 'Previewing the edited cut.');
+  try {
+    video.pause();
+    await watermark.decode().catch(() => {
+      throw new Error('The watermark could not load. Check that the assets folder is beside index.html.');
+    });
+    signal.throwIfAborted();
+    const {audio, monitor, voice, tone} = audioGraph();
+    voice.gain.value = 0;
+    tone.gain.value = 0;
+    monitor.gain.value = exporting ? 0 : 1;
+    await audio.resume();
+    signal.throwIfAborted();
+    const scale = Math.min(1, 1920 / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.max(2, Math.floor(video.videoWidth * scale / 2) * 2);
+    canvas.height = Math.max(2, Math.floor(video.videoHeight * scale / 2) * 2);
+    for (const segment of segments) {
+      await seekTo(segment.from, signal);
+      draw(segment.teaser);
+      canvas.hidden = false;
+      video.hidden = true;
+      if (exporting) {
+        if (recording) recording.recorder.resume();
+        else {
+          recording = makeRecorder();
+          recording.recorder.start(500);
+        }
+      }
+      await playSegment(segment, time => {
+        progress.value = (elapsed + time - segment.from) / duration;
+      }, signal);
+      elapsed += segment.to - segment.from;
+      if (recording && segment !== segments.at(-1)) recording.recorder.pause();
+    }
+    if (recording) {
+      recording.recorder.stop();
+      const blob = await recording.finished;
+      signal.throwIfAborted();
+      if (!blob.size) throw new Error('The browser produced an empty video. Try a different browser.');
+      exportUrl = URL.createObjectURL(blob);
+      download.href = exportUrl;
+      const extension = blob.type.includes('mp4') ? 'mp4' : 'webm';
+      download.download = 'clash-of-nations-cut.' + extension;
+      download.textContent = 'Download ' + extension.toUpperCase();
+      download.hidden = false;
+      say('Export ready. Download and check the edited video.');
+    } else {
+      say('Preview complete.');
+    }
+  } catch (error) {
+    say(error.name === 'AbortError' ? 'Stopped.' : error.message);
+  } finally {
+    if (recording?.recorder.state && recording.recorder.state !== 'inactive') recording.recorder.stop();
+    recording?.picture.getTracks().forEach(track => track.stop());
+    video.pause();
+    if (loaded) video.currentTime = originalTime;
+    if (graph) {
+      graph.voice.gain.value = 1;
+      graph.tone.gain.value = 0;
+      graph.monitor.gain.value = 1;
+    }
+    canvas.hidden = true;
+    video.hidden = !loaded;
+    progress.hidden = true;
+    running = undefined;
+    setControls();
+  }
+}
+
+byId('preview').addEventListener('click', () => run(false));
+byId('export').addEventListener('click', () => run(true));
+byId('stop').addEventListener('click', () => running?.abort());
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && running) {
+    running.abort(new Error('Editing stopped when the tab was hidden. Keep this tab visible during playback.'));
+  }
+});
+</script>
+</body>
+</html>
