@@ -123,7 +123,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .controls fieldset{scroll-margin-top:35dvh}
  main>footer{display:none}
 }
-</style>
+.caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}</style>
 
 </head>
 <body>
@@ -228,10 +228,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <legend><span>05</span> AI social caption</legend>
 <p>Use the original post caption as reference, then generate a fresh caption with emojis and hashtags. Review before posting.</p>
 <label>Original source caption<textarea id="sourceCaption" rows="3" maxlength="2000" placeholder="Fetched from social post when available, or paste the original caption here" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
+<label>Original creator / source credit (optional)<input id="captionCredit" type="text" maxlength="120" placeholder="Creator or page name" style="display:block;width:100%;margin:6px 0 10px"></label>
 <label>What happens in the video (optional, helps accuracy)<textarea id="videoContext" rows="2" maxlength="2000" placeholder="Describe only what is visible or audible" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
 <label>Platform<select id="captionPlatform"><option value="facebook">Facebook</option><option value="x">X / Twitter</option><option value="youtube shorts">YouTube Shorts</option></select></label>
 <div class="buttons" style="margin-top:10px"><button type="button" id="generateCaption">Generate Caption ✨</button><button type="button" id="copyCaption" disabled>Copy Caption</button></div>
-<label style="display:block;margin-top:10px">Generated caption<textarea id="captionOutput" rows="5" placeholder="Your editable caption will appear here" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
+<div id="captionVariants" class="caption-variants" aria-live="polite"></div>
+<label style="display:block;margin-top:10px">Selected caption (editable)<textarea id="captionOutput" rows="5" placeholder="Your editable caption will appear here" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
 <p id="captionStatus" role="status">Caption generation uses the cloud backend. The original caption is editable.</p>
 </fieldset>
 <div class="actions"><button type="button" id="preview" data-edit disabled>▶ Preview edited video</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
@@ -341,6 +343,8 @@ function loadSource(url, name, local) {
   byId('subtitleOverlay').hidden = true;
   byId('subtitleStatus').textContent = 'No subtitles yet. Tap Auto Transcribe Speech before exporting.';
   byId('captionOutput').value = '';
+  byId('captionVariants').replaceChildren();
+  byId('captionCredit').value = '';
   byId('sourceCaption').value = '';
   byId('copyCaption').disabled = true;
   byId('hook').checked = false;
@@ -1141,6 +1145,7 @@ async function fetchSourceCaption(url) {
     if (!response.ok) throw new Error('Original caption could not be retrieved.');
     const result = await response.json();
     byId('sourceCaption').value = result.caption || '';
+    byId('captionCredit').value = result.uploader || '';
     byId('captionStatus').textContent = result.caption
       ? 'Original caption retrieved from the social post. Generating your new caption…'
       : 'This post has no available caption. Add a description to generate one.';
@@ -1158,18 +1163,36 @@ async function generateSocialCaption() {
   }
   const button = byId('generateCaption');
   button.disabled = true;
-  byId('captionStatus').textContent = 'Generating an original caption…';
+  byId('captionStatus').textContent = 'Generating three caption options…';
   try {
     const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
     const response = await fetch(new URL('/api/generate-caption',api),{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({source_caption,video_context,platform:byId('captionPlatform').value})
+      body:JSON.stringify({source_caption,video_context,platform:byId('captionPlatform').value,credit:byId('captionCredit').value.trim()})
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || 'Caption generation failed.');
-    byId('captionOutput').value = result.caption || '';
-    byId('copyCaption').disabled = !result.caption;
-    byId('captionStatus').textContent = 'Caption ready. Review, edit, then copy.';
+    const variants = Array.isArray(result.variants) ? result.variants : [];
+    const root=byId('captionVariants');
+    root.replaceChildren();
+    const names={punchy:'⚡ Punchy',curiosity:'👀 Curiosity hook',neutral:'📰 Neutral / informative'};
+    variants.forEach((variant,index)=>{
+      const card=document.createElement('div');card.className='caption-option';
+      const heading=document.createElement('strong');heading.textContent=names[variant.style] || variant.style || 'Option '+(index+1);
+      const body=document.createElement('p');body.textContent=variant.text || '';
+      const actions=document.createElement('div');actions.className='buttons';
+      const select=document.createElement('button');select.type='button';select.textContent='Edit this version';
+      select.addEventListener('click',()=>{byId('captionOutput').value=variant.text||'';byId('copyCaption').disabled=!variant.text;byId('captionStatus').textContent='Version selected. Edit it below or copy.';});
+      const copy=document.createElement('button');copy.type='button';copy.textContent='Copy';
+      copy.addEventListener('click',async()=>{
+        try{await navigator.clipboard.writeText(variant.text||'');byId('captionStatus').textContent='Caption copied.';}
+        catch{byId('captionOutput').value=variant.text||'';byId('captionOutput').focus();byId('captionOutput').select();byId('captionStatus').textContent='Use the iPhone selection menu to copy.';}
+      });
+      actions.append(select,copy);card.append(heading,body,actions);root.append(card);
+    });
+    byId('captionOutput').value = variants[0]?.text || result.caption || '';
+    byId('copyCaption').disabled = !byId('captionOutput').value;
+    byId('captionStatus').textContent = variants.length ? 'Three captions ready. Choose, edit or copy any version.' : 'Caption ready. Review, edit, then copy.';
   } catch (error) {
     byId('captionStatus').textContent = error.message;
   } finally {button.disabled = false;}
