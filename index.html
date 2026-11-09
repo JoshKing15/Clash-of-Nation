@@ -19,8 +19,8 @@ h1{font-size:clamp(2.4rem,6vw,4.2rem);letter-spacing:-.06em;margin:27px 0 0}
 .intro{margin:8px 0 23px}
 .workspace{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(0,1fr);gap:16px;align-items:start}
 .panel{border:1px solid var(--edge);border-radius:16px;background:var(--panel);padding:16px;min-width:0}
-.screen{height:clamp(230px,38vw,455px);background:#090a0d;border-radius:11px;display:grid;place-items:center;overflow:hidden}
-video,canvas{width:100%;height:100%;min-height:0;object-fit:contain}
+.screen{position:relative;height:clamp(230px,38vw,455px);background:#090a0d;border-radius:11px;display:grid;place-items:center;overflow:hidden}
+video,canvas{width:100%;height:100%;min-height:0;object-fit:contain}#maskOverlay{position:absolute;border:2px solid #bff58a;background:rgba(191,245,138,.13);touch-action:none;cursor:move;z-index:3;box-shadow:0 0 0 1px #0008}#maskOverlay::after{content:"Drag to position";position:absolute;left:0;top:0;background:#151d12;color:#bff58a;font-size:10px;padding:2px 4px;white-space:nowrap}
 #empty{text-align:center;display:grid;gap:8px}
 .play{font-size:1.6rem;margin:0 0 6px}
 .transport{margin:12px 0}
@@ -70,7 +70,7 @@ footer{margin-top:15px}
 <p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
 <section class="panel viewer" aria-label="Source video">
-<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
+<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
 <div class="transport">
 <button type="button" id="play" data-edit disabled>Play source</button>
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
@@ -125,7 +125,7 @@ footer{margin-top:15px}
 <label class="check"><input type="checkbox" id="brand" checked> Add the Clash of Nations logo</label>
 <label class="check"><input type="checkbox" id="mask"> Cover an existing watermark</label>
 <div id="maskControls" hidden>
-<p>Position the box over a fixed watermark. Select Preview cut to check its position and size. Edit videos you own or have permission to modify.</p>
+<p>Drag the green rectangle directly over the watermark on the video. Use Width and Height to resize it. Preview cut shows the actual mask before exporting. Edit videos you own or have permission to modify.</p>
 <label>Method<select id="maskMode"><option value="pixelate">Pixelate</option><option value="cover">Solid cover</option></select></label>
 <div class="mask-grid">
 <label>Horizontal position<input id="maskX" type="range" min="0" max="100" value="100"></label>
@@ -194,6 +194,7 @@ function setControls() {
   byId('importButton').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('fetchOriginal').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('stop').hidden = !running;
+  if (running) byId('maskOverlay').hidden = true;
   byId('autoCensor').disabled = !loaded || !!running || detectingProfanity;
 }
 
@@ -226,6 +227,7 @@ function loadSource(url, name, local) {
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
   byId('mask').checked = false;
+  byId('maskOverlay').hidden = true;
   byId('maskControls').hidden = true;
   if (sourceUrl) URL.revokeObjectURL(sourceUrl);
   sourceUrl = local ? url : undefined;
@@ -371,9 +373,50 @@ byId('fetchOriginal').addEventListener('click', async () => {
   }
 });
 
+function updateMaskOverlay() {
+  const overlay = byId('maskOverlay');
+  overlay.hidden = !loaded || !byId('mask').checked || !!running || video.hidden;
+  if (overlay.hidden || !video.videoWidth || !video.videoHeight) return;
+  const screen = document.querySelector('.screen').getBoundingClientRect();
+  const ratio = Math.min(screen.width/video.videoWidth,screen.height/video.videoHeight);
+  const w = video.videoWidth*ratio, h = video.videoHeight*ratio;
+  const left=(screen.width-w)/2, top=(screen.height-h)/2;
+  const mw=Number(byId('maskW').value)/100, mh=Number(byId('maskH').value)/100;
+  overlay.style.left=(left+(w-w*mw)*Number(byId('maskX').value)/100)+'px';
+  overlay.style.top=(top+(h-h*mh)*Number(byId('maskY').value)/100)+'px';
+  overlay.style.width=(w*mw)+'px';
+  overlay.style.height=(h*mh)+'px';
+}
 byId('mask').addEventListener('change', () => {
   byId('maskControls').hidden = !byId('mask').checked;
+  updateMaskOverlay();
 });
+for (const id of ['maskX','maskY','maskW','maskH']) {
+  byId(id).addEventListener('input',updateMaskOverlay);
+}
+byId('maskOverlay').addEventListener('pointerdown', event => {
+  if (!loaded || running) return;
+  const overlay=byId('maskOverlay');
+  overlay.setPointerCapture(event.pointerId);
+  const startX=event.clientX, startY=event.clientY;
+  const initialX=Number(byId('maskX').value),initialY=Number(byId('maskY').value);
+  const screen=document.querySelector('.screen').getBoundingClientRect();
+  const ratio=Math.min(screen.width/video.videoWidth,screen.height/video.videoHeight);
+  const w=video.videoWidth*ratio,h=video.videoHeight*ratio;
+  function move(e) {
+    const mw=Number(byId('maskW').value)/100,mh=Number(byId('maskH').value)/100;
+    const x=initialX+(e.clientX-startX)/Math.max(1,w*(1-mw))*100;
+    const y=initialY+(e.clientY-startY)/Math.max(1,h*(1-mh))*100;
+    byId('maskX').value=Math.round(Math.max(0,Math.min(100,x)));
+    byId('maskY').value=Math.round(Math.max(0,Math.min(100,y)));
+    updateMaskOverlay();
+  }
+  function done(){overlay.removeEventListener('pointermove',move);overlay.removeEventListener('pointerup',done);overlay.removeEventListener('pointercancel',done);}
+  overlay.addEventListener('pointermove',move);
+  overlay.addEventListener('pointerup',done);
+  overlay.addEventListener('pointercancel',done);
+});
+window.addEventListener('resize',updateMaskOverlay);
 
 share.addEventListener('click', async () => {
   if (!exportFile) return;
@@ -405,6 +448,7 @@ video.addEventListener('loadedmetadata', () => {
   byId('to').value = Math.min(.5, duration);
   setControls();
   updateClock();
+  updateMaskOverlay();
   if (byId('filename').textContent === 'social-video.mp4') {
     linkStatus('Video downloaded and automatically selected — ready to edit (' + seconds(duration) + ' s).');
   }
@@ -807,6 +851,7 @@ async function run(exporting) {
     progress.hidden = true;
     running = undefined;
     setControls();
+    updateMaskOverlay();
   }
 }
 
