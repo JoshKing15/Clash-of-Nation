@@ -102,7 +102,24 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #importPanel{margin-top:8px}#importPanel>.import-summary{cursor:pointer;list-style:none;min-height:44px;padding:10px 12px;border:1px solid var(--edge);border-radius:10px;background:#1d232a;font-weight:650;display:flex;align-items:center;justify-content:space-between;gap:8px}#importPanel>.import-summary::before{content:"▸";color:var(--accent)}#importPanel[open]>.import-summary::before{content:"▾"}#currentVideoName{font-size:12px;font-weight:400;color:var(--muted);max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#importPanel .import-body{padding:12px 2px 4px}#importPanel .import-body>details{margin-top:12px}#importPanel .import-body>details>summary{cursor:pointer;min-height:44px;padding:10px 0}
 
 .caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}
-.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}#recentLinksList{max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch} }</style>
+.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}#recentLinksList{max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch} }
+/* ff51e07-style separation: sticky source panel scrolls internally; editing tools follow the page. */
+@media(max-width:760px){
+ html,body{height:auto;overflow-y:auto;overflow-x:hidden}
+ main,.workspace{height:auto;max-height:none;overflow:visible}
+ .workspace{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
+ .workspace>.viewer{
+   position:sticky;top:0;z-index:8;
+   max-height:46dvh;overflow-y:auto;overflow-x:hidden;
+   -webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;
+   touch-action:pan-y;min-height:0;
+ }
+ .workspace>.viewer .screen{height:min(27dvh,245px);min-height:145px}
+ .workspace>.controls{position:relative;overflow:visible;height:auto;max-height:none;min-height:0}
+ .workspace>.controls .tool-nav{position:sticky;top:0}
+ .workspace>.controls .actions{position:sticky;bottom:env(safe-area-inset-bottom,0px)}
+}
+</style>
 
 </head>
 <body>
