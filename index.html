@@ -106,12 +106,12 @@ footer{margin-top:15px}
 <label>Teaser starts (s)<input type="number" id="hookStart" min="0" step=".01" value="0"></label><button type="button" data-mark="hookStart">Use playhead</button>
 <label>Teaser ends (s)<input type="number" id="hookEnd" min="0" step=".01" value="0"></label><button type="button" data-mark="hookEnd">Use playhead</button>
 </div>
-<label style="display:block;margin-top:12px">Teaser transition<select id="transition"><option value="impact">Impact Cut — flash + zoom</option><option value="fade">Smooth Fade</option><option value="zoom">Quick Zoom</option><option value="glitch">Digital Glitch</option><option value="cut">Hard Cut</option></select></label>
+<label style="display:block;margin-top:12px">Teaser transition<select id="transition"><option value="fade">Smooth Fade (recommended)</option><option value="impact">Impact Cut — flash + zoom</option><option value="zoom">Quick Zoom</option><option value="glitch">Digital Glitch</option><option value="cut">Hard Cut</option></select></label>
 <p>Transition plays at the end of the teaser when enabled.</p>
 </fieldset>
 <fieldset id="censor" disabled>
 <legend><span>02</span> Censor words</legend>
-<p>Set a start and end for each word using the source time. The same edit applies if the word plays again in the teaser.</p>
+<p>Automatically find possible swear words with cloud AI, review the suggestions, or add beeps manually. Censor times follow the source video, including the teaser.</p><div class="buttons"><button type="button" id="autoCensor">Auto Detect Swear Words</button></div><p id="aiStatus" role="status">AI suggestions require GROQ_API_KEY on the Render backend. Manual censoring always works.</p>
 <div class="censorTimes">
 <label>From (s)<input type="number" id="from" min="0" step=".01" value="0"></label>
 <label>To (s)<input type="number" id="to" min="0" step=".01" value=".5"></label>
@@ -167,6 +167,7 @@ let watermarkSettings;
 let originalUrl;
 let fetchingOriginal = false;
 let readingLinkFile = false;
+let detectingProfanity = false;
 let graph;
 let loaded = false;
 let running;
@@ -183,6 +184,7 @@ function setControls() {
   byId('importButton').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('fetchOriginal').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('stop').hidden = !running;
+  byId('autoCensor').disabled = !loaded || !!running || detectingProfanity;
 }
 
 function updateClock() {
@@ -207,6 +209,7 @@ function loadSource(url, name, local) {
   clearDownload();
   ranges.length = 0;
   renderRanges();
+  byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
   byId('mask').checked = false;
@@ -478,6 +481,45 @@ function renderRanges() {
   }
 }
 
+
+byId('autoCensor').addEventListener('click', async () => {
+  if (!loaded || running || detectingProfanity) return;
+  detectingProfanity = true;
+  setControls();
+  const report = byId('aiStatus');
+  report.textContent = 'Sending audio for AI transcription…';
+  try {
+    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
+    const endpoint = new URL('/api/detect-profanity', api);
+    if (endpoint.protocol !== 'https:') throw new Error('Use a secure HTTPS backend URL.');
+    const response = await fetch(video.src);
+    if (!response.ok) throw new Error('Could not read the selected video.');
+    const blob = await response.blob();
+    if (blob.size > 80*1024*1024) throw new Error('Video exceeds the 80 MB detection limit.');
+    const data = new FormData();
+    data.append('file',blob,'video.mp4');
+    const result = await fetch(endpoint,{method:'POST',body:data});
+    const json = await result.json();
+    if (!result.ok) throw new Error(json.detail || 'AI detection failed.');
+    const suggestions = Array.isArray(json.suggestions) ? json.suggestions : [];
+    for (const item of suggestions) {
+      if (!Number.isFinite(item.from) || !Number.isFinite(item.to)) continue;
+      if (item.to <= item.from || item.from >= video.duration) continue;
+      ranges.push({from:Math.max(0,item.from),to:Math.min(video.duration,item.to),mode:'bleep'});
+    }
+    ranges.sort((a,b)=>a.from-b.from);
+    renderRanges();
+    report.textContent = suggestions.length
+      ? suggestions.length + ' possible swear word(s) added as beeps. Review each interval and remove false positives before export.'
+      : 'No swear words detected. You can still add manual beeps.';
+  } catch (error) {
+    report.textContent = error.message || 'AI detection failed. Manual censoring remains available.';
+  } finally {
+    detectingProfanity = false;
+    setControls();
+  }
+});
+
 byId('add').addEventListener('click', () => {
   try {
     const interval = readInterval('from', 'to', 'The censor');
@@ -490,7 +532,7 @@ byId('add').addEventListener('click', () => {
   }
 });
 
-function draw(teaser, transitionProgress = 0) {
+function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   const {brand, mask} = watermarkSettings;
   if (mask) {
@@ -518,21 +560,21 @@ function draw(teaser, transitionProgress = 0) {
     const x = teaser ? canvas.width - margin - width : margin;
     ctx.drawImage(watermark, x, margin, width, width * watermark.naturalHeight / watermark.naturalWidth);
   }
-  if (teaser && transitionProgress > 0) {
+  if (transitionProgress > 0) {
     const style = byId('transition').value;
     const p = Math.max(0, Math.min(1, transitionProgress));
-    if (style === 'impact' || style === 'zoom') {
+    if (!transitionIncoming && (style === 'impact' || style === 'zoom')) {
       const zoom = 1 + .14 * p;
       const w = canvas.width * zoom, h = canvas.height * zoom;
       ctx.drawImage(canvas, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
     }
-    if (style === 'impact') {
+    if (!transitionIncoming && style === 'impact') {
       ctx.fillStyle = 'rgba(255,255,255,' + (.85 * Math.pow(p, 5)) + ')';
       ctx.fillRect(0,0,canvas.width,canvas.height);
     } else if (style === 'fade') {
-      ctx.fillStyle = 'rgba(0,0,0,' + p + ')';
+      ctx.fillStyle = 'rgba(0,0,0,' + (transitionIncoming ? 1-p : p) + ')';
       ctx.fillRect(0,0,canvas.width,canvas.height);
-    } else if (style === 'glitch') {
+    } else if (!transitionIncoming && style === 'glitch') {
       const slices = 9;
       for (let i=0;i<slices;i++) {
         const y = Math.floor(i*canvas.height/slices);
@@ -601,8 +643,10 @@ function playSegment(segment, onTick, signal) {
       if (video.readyState >= 2) {
         const transitionLength = Math.min(.35, (segment.to-segment.from)*.4);
         const transitionProgress = segment.teaser && transitionLength > 0
-          ? Math.max(0, (time - (segment.to-transitionLength))/transitionLength) : 0;
-        draw(segment.teaser, transitionProgress);
+          ? Math.max(0, (time - (segment.to-transitionLength))/transitionLength)
+          : (!segment.teaser && segment.fadeIn && transitionLength > 0
+            ? Math.max(0, Math.min(1, (time-segment.from)/transitionLength)) : 0);
+        draw(segment.teaser, transitionProgress, !!segment.fadeIn);
       }
       onTick(time);
     }
@@ -649,7 +693,7 @@ async function run(exporting) {
   try {
     const main = readInterval('start', 'end', 'The main cut');
     segments = byId('hook').checked
-      ? [{...readInterval('hookStart', 'hookEnd', 'The teaser'), teaser: true}, main]
+      ? [{...readInterval('hookStart', 'hookEnd', 'The teaser'), teaser: true}, {...main,fadeIn:true}]
       : [main];
   } catch (error) {
     say(error.message);
