@@ -7,7 +7,7 @@ import socket
 import tempfile
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -99,3 +99,57 @@ async def api_download(request: DownloadRequest):
         folder.cleanup()
         # Platform restrictions, private videos and rate limits may prevent retrieval.
         raise HTTPException(status_code=422, detail=f"Video could not be retrieved: {str(exc)[:180]}")
+
+# Reviewable, English-language profanity suggestions. Never auto-apply without review.
+PROFANITY = {"fuck","fucking","fucked","fucker","motherfucker","shit","shitty","bullshit","bitch","bitches","asshole","assholes","cunt","dick","cock","pussy","bastard","wanker","twat"}
+
+def transcribe_audio(video_path: str, audio_path: str):
+    import subprocess
+    subprocess.run(["ffmpeg","-nostdin","-v","error","-y","-i",video_path,
+                    "-vn","-ac","1","-ar","16000","-b:a","48k","-t","180",audio_path],
+                   check=True,timeout=45)
+    if pathlib.Path(audio_path).stat().st_size > 24*1024*1024:
+        raise ValueError("Audio is too large for transcription")
+    import httpx
+    with open(audio_path,"rb") as audio:
+        response = httpx.post("https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization":"Bearer "+os.environ["GROQ_API_KEY"]},
+            data={"model":"whisper-large-v3-turbo","response_format":"verbose_json",
+                  "timestamp_granularities[]":"word"},
+            files={"file":("audio.mp3",audio,"audio/mpeg")},timeout=100)
+    if response.status_code != 200:
+        raise ValueError("Cloud transcription failed (HTTP "+str(response.status_code)+")")
+    words = response.json().get("words",[])
+    result = []
+    import re
+    for word in words:
+        raw = str(word.get("word","")).strip()
+        clean = re.sub(r"[^a-z]","",raw.lower())
+        if clean in PROFANITY:
+            start = max(0,float(word.get("start",0))-.08)
+            end = max(start+.12,float(word.get("end",start+.3))+.08)
+            result.append({"word":raw,"from":round(start,2),"to":round(end,2),"mode":"bleep"})
+    return {"suggestions":result,"words_analyzed":len(words)}
+
+@app.post("/api/detect-profanity")
+async def detect_profanity(file: UploadFile = File(...)):
+    if not os.getenv("GROQ_API_KEY"):
+        raise HTTPException(status_code=503,detail="Add GROQ_API_KEY to the Render backend environment to enable AI detection.")
+    if file.content_type not in ("video/mp4","video/webm","video/quicktime","application/octet-stream"):
+        raise HTTPException(status_code=400,detail="Upload an MP4, WebM or MOV video.")
+    with tempfile.TemporaryDirectory(prefix="clash-ai-") as folder:
+        video_path = str(pathlib.Path(folder)/"source.mp4")
+        size=0
+        with open(video_path,"wb") as output:
+            while chunk := await file.read(1024*1024):
+                size+=len(chunk)
+                if size>MAX_BYTES:
+                    raise HTTPException(status_code=413,detail="Video exceeds 80 MB.")
+                output.write(chunk)
+        if not size:
+            raise HTTPException(status_code=400,detail="Empty video.")
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(
+                transcribe_audio,video_path,str(pathlib.Path(folder)/"audio.mp3")),timeout=145)
+        except Exception as exc:
+            raise HTTPException(status_code=422,detail=str(exc)[:220])
