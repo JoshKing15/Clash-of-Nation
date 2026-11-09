@@ -2,4 +2,8 @@
 
 Browser-based clip editor for Clash of Nations videos. Trim a clip, add an optional teaser, and bleep or mute selected sections.
 
-From the repository folder, run `python -m http.server 8000` and open `http://localhost:8000` in desktop Chrome or Edge. Load a video, set the cut, preview it, and select **Export video**. The transparent logo in `assets/` is added to the preview and burned into every exported frame. It appears in the top-left during the main cut and in the top-right during the teaser to clear the title.
+Open the [hosted editor](https://clash-of-nations-clip-editor.nicesheep16.chatgpt.site) in Safari or run `python -m http.server 8000` from this folder and open `http://localhost:8000`.
+
+Import a video from Photos or Files, or use a direct HTTPS media link with cross-origin access enabled. For social posts, use the platform’s download or export option when available and import the saved file.
+
+Use Watermarks to add the Clash of Nations logo or pixelate or cover a fixed rectangle over an existing mark. Preview the result, then select Export video. The editor prefers MP4 when the browser supports it. On supported phones, Save / Share opens the system share sheet. Download saves the file directly.

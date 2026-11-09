@@ -54,11 +54,12 @@ li{display:flex;justify-content:space-between;align-items:center;gap:10px;font-s
 li button{padding:4px 7px}
 #status,footer{font-size:.8rem}
 #status{margin:10px 0 0}
+.import-row{display:flex;gap:8px;margin-top:8px}.import-row input{min-width:0;flex:1}.mask-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mask-grid input{padding:0}.save-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
 #download{display:inline-block;margin-top:12px;color:var(--accent)}
 progress{width:100%;margin-top:12px;accent-color:var(--accent)}
 footer{margin-top:15px}
 [hidden]{display:none!important}
-@media(max-width:760px){main{padding:19px 13px}.workspace{grid-template-columns:1fr}.badge{font-size:.63rem}.screen{height:clamp(220px,60vw,380px)}}
+@media(max-width:760px){main{padding:19px 13px}button,.upload{min-height:44px}input[type=url],input[type=number],select{font-size:16px}.workspace{grid-template-columns:1fr}.badge{font-size:.63rem}.screen{height:clamp(220px,60vw,380px)}}
 </style>
 
 </head>
@@ -66,7 +67,7 @@ footer{margin-top:15px}
 <main>
 <header><div class="brand"><span class="mark">▶</span> CLASH OF NATIONS</div><span class="badge">LOCAL VIDEO PROCESSING</span></header>
 <h1>Clip editor</h1>
-<p class="intro">Start where the conflict begins. Bleep or mute selected words, then export a clean cut.</p>
+<p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
 <section class="panel viewer" aria-label="Source video">
 <div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
@@ -75,8 +76,16 @@ footer{margin-top:15px}
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
 <output id="clock">0.00 / 0.00 s</output>
 </div>
-<label class="upload">Choose video<input type="file" id="file" accept="video/*,.mov,.mkv,.mp4,.webm"></label>
+<label class="upload">Choose from Photos or Files<input type="file" id="file" accept="video/*,.mov,.mkv,.mp4,.webm"></label>
 <span id="filename">MP4 or another format your browser can play</span>
+<details>
+<summary>Import from a direct video link</summary>
+<form id="importLink" class="import-row">
+<input id="videoUrl" type="url" required inputmode="url" autocomplete="off" aria-label="Direct HTTPS video link" placeholder="https://…/video.mp4">
+<button id="importButton">Import</button>
+</form>
+<p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
+</details>
 </section>
 <section class="panel controls" aria-label="Editing controls">
 <fieldset id="edit" disabled>
@@ -102,10 +111,25 @@ footer{margin-top:15px}
 <div class="buttons"><button type="button" data-mark="from">Mark from</button><button type="button" data-mark="to">Mark to</button><button type="button" id="add">Add censor</button></div>
 <ul id="ranges"></ul>
 </fieldset>
+<fieldset disabled>
+<legend><span>03</span> Watermarks</legend>
+<label class="check"><input type="checkbox" id="brand" checked> Add the Clash of Nations logo</label>
+<label class="check"><input type="checkbox" id="mask"> Cover an existing watermark</label>
+<div id="maskControls" hidden>
+<p>Position the box over a fixed watermark. Select Preview cut to check its position and size. Edit videos you own or have permission to modify.</p>
+<label>Method<select id="maskMode"><option value="pixelate">Pixelate</option><option value="cover">Solid cover</option></select></label>
+<div class="mask-grid">
+<label>Horizontal position<input id="maskX" type="range" min="0" max="100" value="100"></label>
+<label>Vertical position<input id="maskY" type="range" min="0" max="100" value="100"></label>
+<label>Width<input id="maskW" type="range" min="3" max="100" value="20"></label>
+<label>Height<input id="maskH" type="range" min="3" max="100" value="10"></label>
+</div>
+</div>
+</fieldset>
 <div class="actions"><button type="button" id="preview" data-edit disabled>Preview cut</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
 <progress id="progress" max="1" value="0" hidden></progress>
 <p role="status" id="status">Choose a video to unlock the editor.</p>
-<a id="download" hidden>Download edited video</a>
+<div class="save-actions"><button type="button" id="share" hidden>Save / Share</button><a id="download" hidden>Download edited video</a></div>
 </section>
 </div>
 <footer>Source times are in seconds. Use headphones to check each bleep before exporting.</footer>
@@ -117,6 +141,9 @@ const byId = id => document.getElementById(id);
 const video = byId('video');
 const canvas = byId('canvas');
 const ctx = canvas.getContext('2d', {alpha: false});
+const maskCanvas = document.createElement('canvas');
+const maskContext = maskCanvas.getContext('2d');
+const share = byId('share');
 const watermark = new Image();
 watermark.src = 'assets/clash-of-nations-watermark.png';
 const status = byId('status');
@@ -126,6 +153,8 @@ const editControls = document.querySelectorAll('[data-edit], fieldset');
 const ranges = [];
 let sourceUrl;
 let exportUrl;
+let exportFile;
+let watermarkSettings;
 let graph;
 let loaded = false;
 let running;
@@ -137,6 +166,8 @@ const valueOf = id => byId(id).valueAsNumber;
 function setControls() {
   for (const control of editControls) control.disabled = !loaded || !!running;
   byId('file').disabled = !!running;
+  byId('importButton').disabled = !!running;
+  byId('videoUrl').disabled = !!running;
   byId('stop').hidden = !running;
 }
 
@@ -149,13 +180,13 @@ function updateClock() {
 function clearDownload() {
   if (exportUrl) URL.revokeObjectURL(exportUrl);
   exportUrl = undefined;
+  exportFile = undefined;
+  share.hidden = true;
   download.hidden = true;
   download.removeAttribute('href');
 }
 
-byId('file').addEventListener('change', event => {
-  const file = event.target.files[0];
-  if (!file) return;
+function loadSource(url, name, local) {
   video.pause();
   loaded = false;
   setControls();
@@ -164,15 +195,60 @@ byId('file').addEventListener('change', event => {
   renderRanges();
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
+  byId('mask').checked = false;
+  byId('maskControls').hidden = true;
   if (sourceUrl) URL.revokeObjectURL(sourceUrl);
-  sourceUrl = URL.createObjectURL(file);
-  byId('filename').textContent = file.name;
+  sourceUrl = local ? url : undefined;
+  if (local) video.removeAttribute('crossorigin');
+  else video.crossOrigin = 'anonymous';
+  byId('filename').textContent = name;
   say('Loading video…');
   video.hidden = true;
   byId('empty').hidden = false;
-  video.src = sourceUrl;
+  video.src = url;
   video.load();
+}
+
+byId('file').addEventListener('change', event => {
+  const file = event.target.files[0];
+  if (!file || running) return;
+  loadSource(URL.createObjectURL(file), file.name, true);
   event.target.value = '';
+});
+
+byId('importLink').addEventListener('submit', event => {
+  event.preventDefault();
+  if (running) return;
+  let url;
+  try {
+    url = new URL(byId('videoUrl').value);
+  } catch {
+    say('Enter a complete direct video link.');
+    return;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password) {
+    say('Enter a direct HTTPS video link without login details.');
+    return;
+  }
+  if (/(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/.test(url.hostname)
+      && !/\.(mp4|mov|webm)$/i.test(url.pathname)) {
+    say('That is a social post link. Save the video to Photos or Files, then choose it here.');
+    return;
+  }
+  loadSource(url.href, url.hostname, false);
+});
+
+byId('mask').addEventListener('change', () => {
+  byId('maskControls').hidden = !byId('mask').checked;
+});
+
+share.addEventListener('click', async () => {
+  if (!exportFile) return;
+  try {
+    await navigator.share({files: [exportFile]});
+  } catch (error) {
+    if (error.name !== 'AbortError') say('Sharing failed. Use Download to save the file instead.');
+  }
 });
 
 video.addEventListener('loadedmetadata', () => {
@@ -203,7 +279,8 @@ video.addEventListener('error', () => {
   loaded = false;
   setControls();
   running?.abort();
-  say('This browser could not read the video. Try a standard H.264 MP4.');
+  say(sourceUrl ? 'This browser could not read the video. Try a standard H.264 MP4.'
+    : 'This link could not load as a video. Use a direct link that allows browser access, or choose a file.');
 });
 video.addEventListener('timeupdate', updateClock);
 video.addEventListener('play', () => { byId('play').textContent = 'Pause source'; });
@@ -299,14 +376,33 @@ byId('add').addEventListener('click', () => {
 
 function draw(teaser) {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const margin = Math.min(canvas.width, canvas.height) * .04;
-  const watermarkWidth = canvas.width * .15;
-  const watermarkHeight = watermarkWidth * watermark.naturalHeight / watermark.naturalWidth;
-  if (!teaser) {
-    ctx.drawImage(watermark, margin, margin, watermarkWidth, watermarkHeight);
-    return;
+  const {brand, mask} = watermarkSettings;
+  if (mask) {
+    const width = Math.round(canvas.width * mask.width);
+    const height = Math.round(canvas.height * mask.height);
+    const x = Math.round((canvas.width - width) * mask.x);
+    const y = Math.round((canvas.height - height) * mask.y);
+    if (mask.pixelate && width && height) {
+      const sourceX = x * video.videoWidth / canvas.width;
+      const sourceY = y * video.videoHeight / canvas.height;
+      maskContext.drawImage(video, sourceX, sourceY, width * video.videoWidth / canvas.width,
+        height * video.videoHeight / canvas.height, 0, 0, maskCanvas.width, maskCanvas.height);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(maskCanvas, x, y, width, height);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#101115';
+      ctx.fillRect(x, y, width, height);
+    }
   }
-  ctx.drawImage(watermark, canvas.width - margin - watermarkWidth, margin, watermarkWidth, watermarkHeight);
+  if (brand) {
+    const margin = Math.min(canvas.width, canvas.height) * .04;
+    const width = canvas.width * .15;
+    const x = teaser ? canvas.width - margin - width : margin;
+    ctx.drawImage(watermark, x, margin, width, width * watermark.naturalHeight / watermark.naturalWidth);
+  }
+  if (!teaser) return;
   const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * .037));
   ctx.font = 'bold ' + size + 'px system-ui';
   const text = 'MOMENTS LATER';
@@ -375,14 +471,14 @@ function playSegment(segment, onTick, signal) {
 
 function makeRecorder() {
   if (!window.MediaRecorder || !canvas.captureStream) {
-    throw new Error('Video export is unavailable in this browser. Try desktop Chrome or Edge.');
+    throw new Error('Video export is unavailable in this browser. Try a current version of Safari, Chrome or Edge.');
   }
   const picture = canvas.captureStream(30);
   const stream = new MediaStream([...picture.getVideoTracks(), ...graph.output.stream.getAudioTracks()]);
   const type = [
     'video/mp4;codecs=avc1.42001f,mp4a.40.2',
-    'video/webm;codecs=vp8,opus',
     'video/mp4',
+    'video/webm;codecs=vp8,opus',
     'video/webm'
   ].find(format => MediaRecorder.isTypeSupported(format));
   try {
@@ -428,19 +524,30 @@ async function run(exporting) {
   say(exporting ? 'Exporting in real time. Keep this tab visible.' : 'Previewing the edited cut.');
   try {
     video.pause();
-    await watermark.decode().catch(() => {
-      throw new Error('The watermark could not load. Check that the assets folder is beside index.html.');
-    });
-    signal.throwIfAborted();
     const {audio, monitor, voice, tone} = audioGraph();
     voice.gain.value = 0;
     tone.gain.value = 0;
     monitor.gain.value = exporting ? 0 : 1;
     await audio.resume();
+    const percent = id => valueOf(id) / 100;
+    watermarkSettings = {
+      brand: byId('brand').checked,
+      mask: byId('mask').checked ? {
+        x: percent('maskX'), y: percent('maskY'), width: percent('maskW'), height: percent('maskH'),
+        pixelate: byId('maskMode').value === 'pixelate'
+      } : null
+    };
+    if (watermarkSettings.brand) {
+      await watermark.decode().catch(() => { throw new Error('The Clash of Nations logo could not load.'); });
+    }
     signal.throwIfAborted();
     const scale = Math.min(1, 1920 / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.max(2, Math.floor(video.videoWidth * scale / 2) * 2);
     canvas.height = Math.max(2, Math.floor(video.videoHeight * scale / 2) * 2);
+    if (watermarkSettings.mask?.pixelate) {
+      maskCanvas.width = Math.max(1, Math.round(canvas.width * watermarkSettings.mask.width / 14));
+      maskCanvas.height = Math.max(1, Math.round(canvas.height * watermarkSettings.mask.height / 14));
+    }
     for (const segment of segments) {
       await seekTo(segment.from, signal);
       draw(segment.teaser);
@@ -470,7 +577,9 @@ async function run(exporting) {
       download.download = 'clash-of-nations-cut.' + extension;
       download.textContent = 'Download ' + extension.toUpperCase();
       download.hidden = false;
-      say('Export ready. Download and check the edited video.');
+      exportFile = new File([blob], download.download, {type: blob.type.split(';')[0]});
+      share.hidden = !navigator.canShare?.({files: [exportFile]});
+      say('Export ready. Use Save / Share for the phone’s share sheet, or Download to save a file.');
     } else {
       say('Preview complete.');
     }
