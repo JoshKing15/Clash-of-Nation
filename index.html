@@ -100,27 +100,28 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 
-/* iPhone: one native document scroll, no nested scroll traps. */
+/* Mobile: two bounded, independently scrollable iOS touch panes. */
 @media(max-width:820px){
- html,body{height:auto!important;min-height:100%;overflow-y:visible!important;overscroll-behavior-y:auto!important}
- body{overflow-x:clip!important}
- main{display:block!important;height:auto!important;min-height:100dvh;overflow:visible!important;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 90px)!important}
- main>h1{font-size:20px;margin:6px 0 0}
- main>.intro{font-size:12px;margin:2px 0 8px}
- .workspace{display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}
- .workspace>.viewer,.workspace>.controls,.workspace>.panel{display:block!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;overscroll-behavior:auto!important;touch-action:auto!important}
- .workspace>.viewer{position:sticky!important;top:0!important;z-index:10;padding:8px!important;background:var(--panel);box-shadow:0 6px 16px #0009}
- .workspace>.viewer .screen{height:min(27dvh,230px)!important;min-height:130px!important}
- .workspace>.viewer .transport{margin:6px 0}
- .workspace>.controls{position:relative!important;top:auto!important;padding:10px!important;margin-top:10px}
- .workspace>.controls .tool-nav{position:relative!important;top:auto!important}
- .workspace>.controls .actions{position:sticky!important;bottom:0!important;z-index:20;padding:10px 4px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel)}
- .workspace>.controls .actions button{flex:1;min-height:48px}
+ html,body{height:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
+ body{overflow-x:hidden!important}
+ main{height:100dvh!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))!important}
+ main>header,main>h1,main>.intro{flex:0 0 auto!important}
+ main>h1{font-size:20px;margin:5px 0 0}
+ main>.intro{font-size:12px;margin:2px 0 7px}
+ .workspace{display:flex!important;flex:1 1 0!important;flex-direction:column!important;gap:8px!important;min-height:0!important;height:0!important;overflow:hidden!important}
+ .workspace>.viewer,.workspace>.controls{display:block!important;position:relative!important;top:auto!important;bottom:auto!important;flex-shrink:1!important;min-height:0!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain!important;touch-action:pan-y!important;scrollbar-width:thin;padding:8px!important}
+ .workspace>.viewer{flex:0 1 40%!important;min-height:110px!important}
+ .workspace>.controls{flex:1 1 60%!important;min-height:125px!important}
+ .workspace>.viewer .screen{height:min(23dvh,190px)!important;min-height:90px!important}
+ .workspace>.viewer .transport{margin:5px 0}
+ .workspace>.controls .tool-nav{position:sticky!important;top:0!important;z-index:8;background:var(--panel)}
+ .workspace>.controls .actions{position:sticky!important;bottom:0!important;z-index:8;background:var(--panel);padding:8px 2px calc(8px + env(safe-area-inset-bottom,0px))}
+ .workspace>.controls .actions button{min-height:44px}
+ .workspace>.viewer::-webkit-scrollbar,.workspace>.controls::-webkit-scrollbar{width:5px}
+ .workspace>.viewer::-webkit-scrollbar-thumb,.workspace>.controls::-webkit-scrollbar-thumb{background:#929aa7;border-radius:8px}
  input,select,textarea{font-size:16px!important}
- input[type=range]{touch-action:pan-y}
  button,summary,label{touch-action:manipulation}
  details>summary{min-height:44px}
- .controls fieldset{scroll-margin-top:35dvh}
  main>footer{display:none}
 }
 .caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}</style>
