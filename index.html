@@ -99,6 +99,26 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .subtitle-row input{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+/* Independent scroll regions: video/import above, editor tools below. */
+@media(max-width:760px){
+ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+ body{height:100dvh}
+ main{height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 6px) 8px calc(env(safe-area-inset-bottom,0px) + 6px)}
+ main>header,main>h1,main>.intro{flex:none}
+ main>h1{margin:6px 0 0;font-size:20px}
+ main>.intro{font-size:12px;margin:2px 0 6px}
+ .workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(165px,42fr) minmax(200px,58fr);gap:8px;overflow:hidden}
+ .workspace>.viewer,.workspace>.controls{position:relative!important;top:auto!important;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#69717c transparent}
+ .workspace>.viewer::-webkit-scrollbar,.workspace>.controls::-webkit-scrollbar{width:5px}
+ .workspace>.viewer::-webkit-scrollbar-thumb,.workspace>.controls::-webkit-scrollbar-thumb{background:#69717c;border-radius:8px}
+ .workspace>.viewer{padding:8px}
+ .workspace>.controls{padding:8px}
+ .workspace>.viewer .screen{height:min(27dvh,225px);min-height:120px}
+ .workspace>.controls .tool-nav{position:sticky!important;top:0!important;z-index:6}
+ .workspace>.controls .actions{position:sticky!important;bottom:0!important;z-index:5}
+ main>footer{display:none}
+}
 </style>
 
 </head>
@@ -108,7 +128,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <h1>Clip editor</h1>
 <p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
-<section class="panel viewer" aria-label="Source video">
+<section class="panel viewer" aria-label="Video preview and upload — independently scrollable" tabindex="0">
 <div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Edit your video on your phone.</small></div></div>
 <div class="transport">
 <button type="button" id="play" data-edit disabled>Play source</button>
@@ -133,7 +153,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
 </details></div></details>
 </section>
-<section class="panel controls" aria-label="Editing controls">
+<section class="panel controls" aria-label="Editing tools — independently scrollable" tabindex="0">
 <nav class="tool-nav" aria-label="Editing tools">
 <button type="button" data-tool="edit" aria-pressed="true">✂️<span>Trim</span></button>
 <button type="button" data-tool="censor" aria-pressed="false">🔇<span>Censor</span></button>
