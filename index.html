@@ -100,23 +100,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 
-/* Independent scroll regions: video/import above, editor tools below. */
+/* iOS Safari: independently scrollable panes with a page-scroll fallback. */
 @media(max-width:760px){
- html,body{height:100%;overflow:hidden;overscroll-behavior:none}
- body{height:100dvh}
- main{height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 6px) 8px calc(env(safe-area-inset-bottom,0px) + 6px)}
- main>header,main>h1,main>.intro{flex:none}
- main>h1{margin:6px 0 0;font-size:20px}
- main>.intro{font-size:12px;margin:2px 0 6px}
- .workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(165px,42fr) minmax(200px,58fr);gap:8px;overflow:hidden}
- .workspace>.viewer,.workspace>.controls{position:relative!important;top:auto!important;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#69717c transparent}
- .workspace>.viewer::-webkit-scrollbar,.workspace>.controls::-webkit-scrollbar{width:5px}
- .workspace>.viewer::-webkit-scrollbar-thumb,.workspace>.controls::-webkit-scrollbar-thumb{background:#69717c;border-radius:8px}
- .workspace>.viewer{padding:8px}
- .workspace>.controls{padding:8px}
- .workspace>.viewer .screen{height:min(27dvh,225px);min-height:120px}
+ html,body{height:auto!important;min-height:100%;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior-y:auto!important}
+ body{height:auto!important}
+ main{height:auto!important;min-height:100dvh;display:block!important;overflow:visible!important;padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 24px)}
+ main>h1{font-size:20px;margin:6px 0 0}
+ main>.intro{font-size:12px;margin:2px 0 8px}
+ .workspace{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:10px!important;height:auto!important;min-height:0!important;overflow:visible!important}
+ .workspace>.viewer,.workspace>.controls{
+   display:block!important;flex:none!important;align-self:stretch!important;
+   position:relative!important;top:auto!important;bottom:auto!important;
+   height:auto!important;min-height:0!important;max-height:44dvh!important;
+   overflow-x:hidden!important;overflow-y:scroll!important;
+   -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+   touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#89929d #1d232a;
+ }
+ .workspace>.viewer{max-height:39dvh!important;padding:8px!important}
+ .workspace>.controls{max-height:49dvh!important;padding:8px!important}
+ .workspace>.viewer .screen{height:min(26dvh,220px)!important;min-height:130px!important}
  .workspace>.controls .tool-nav{position:sticky!important;top:0!important;z-index:6}
  .workspace>.controls .actions{position:sticky!important;bottom:0!important;z-index:5}
+ .workspace>.viewer::-webkit-scrollbar,.workspace>.controls::-webkit-scrollbar{width:6px}
+ .workspace>.viewer::-webkit-scrollbar-thumb,.workspace>.controls::-webkit-scrollbar-thumb{background:#89929d;border-radius:8px}
  main>footer{display:none}
 }
 </style>
