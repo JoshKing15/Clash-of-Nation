@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: clash-of-nations-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: FRONTEND_ORIGIN
+        value: https://clash-of-nation-1.onrender.com
+    healthCheckPath: /health
