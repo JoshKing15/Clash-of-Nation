@@ -135,6 +135,16 @@ footer{margin-top:15px}
 </div>
 </div>
 </fieldset>
+<fieldset id="captionTools">
+<legend><span>04</span> AI social caption</legend>
+<p>Use the original post caption as reference, then generate a fresh caption with emojis and hashtags. Review before posting.</p>
+<label>Original source caption<textarea id="sourceCaption" rows="3" maxlength="2000" placeholder="Fetched from social post when available, or paste the original caption here" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
+<label>What happens in the video (optional, helps accuracy)<textarea id="videoContext" rows="2" maxlength="2000" placeholder="Describe only what is visible or audible" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
+<label>Platform<select id="captionPlatform"><option value="facebook">Facebook</option><option value="x">X / Twitter</option><option value="youtube shorts">YouTube Shorts</option></select></label>
+<div class="buttons" style="margin-top:10px"><button type="button" id="generateCaption">Generate Caption ✨</button><button type="button" id="copyCaption" disabled>Copy Caption</button></div>
+<label style="display:block;margin-top:10px">Generated caption<textarea id="captionOutput" rows="5" placeholder="Your editable caption will appear here" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
+<p id="captionStatus" role="status">Caption generation uses the cloud backend. The original caption is editable.</p>
+</fieldset>
 <div class="actions"><button type="button" id="preview" data-edit disabled>Preview cut</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
 <progress id="progress" max="1" value="0" hidden></progress>
 <p role="status" id="status">Choose a video to unlock the editor.</p>
@@ -210,6 +220,8 @@ function loadSource(url, name, local) {
   ranges.length = 0;
   renderRanges();
   byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
+  byId('captionOutput').value = '';
+  byId('copyCaption').disabled = true;
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
   byId('mask').checked = false;
@@ -307,6 +319,7 @@ byId('importLink').addEventListener('submit', async event => {
       linkStatus('Downloading social video through your API…');
       const blob = await fetchSocialVideo(url);
       loadSource(URL.createObjectURL(blob), 'social-video.mp4', true);
+      fetchSourceCaption(url.href);
     } else loadSource(url.href, url.hostname, false);
     linkStatus('Video downloaded. Preparing the editor…');
   } catch (error) {
@@ -791,6 +804,66 @@ async function run(exporting) {
     setControls();
   }
 }
+
+
+async function fetchSourceCaption(url) {
+  byId('sourceCaption').value = '';
+  byId('captionStatus').textContent = 'Looking for the original post caption…';
+  try {
+    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
+    const response = await fetch(new URL('/api/source-caption',api), {
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})
+    });
+    if (!response.ok) throw new Error('Original caption could not be retrieved.');
+    const result = await response.json();
+    byId('sourceCaption').value = result.caption || '';
+    byId('captionStatus').textContent = result.caption
+      ? 'Original caption loaded. Edit it or generate a new one.'
+      : 'This post has no available caption. Add a description to generate one.';
+  } catch {
+    byId('captionStatus').textContent = 'Original caption unavailable. Paste the post caption or describe the video.';
+  }
+}
+byId('generateCaption').addEventListener('click', async () => {
+  const source_caption = byId('sourceCaption').value.trim();
+  const video_context = byId('videoContext').value.trim();
+  if (!source_caption && !video_context) {
+    byId('captionStatus').textContent = 'Add the original post caption or describe the video first.';
+    return;
+  }
+  const button = byId('generateCaption');
+  button.disabled = true;
+  byId('captionStatus').textContent = 'Generating an original caption…';
+  try {
+    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
+    const response = await fetch(new URL('/api/generate-caption',api),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source_caption,video_context,platform:byId('captionPlatform').value})
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Caption generation failed.');
+    byId('captionOutput').value = result.caption || '';
+    byId('copyCaption').disabled = !result.caption;
+    byId('captionStatus').textContent = 'Caption ready. Review, edit, then copy.';
+  } catch (error) {
+    byId('captionStatus').textContent = error.message;
+  } finally {button.disabled = false;}
+});
+byId('captionOutput').addEventListener('input', () => {
+  byId('copyCaption').disabled = !byId('captionOutput').value.trim();
+});
+byId('copyCaption').addEventListener('click', async () => {
+  const value = byId('captionOutput').value.trim();
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    byId('captionStatus').textContent = 'Caption copied! Paste it into your post.';
+  } catch {
+    byId('captionOutput').focus();
+    byId('captionOutput').select();
+    byId('captionStatus').textContent = 'Select Copy from the iPhone text selection menu.';
+  }
+});
 
 byId('preview').addEventListener('click', () => run(false));
 byId('export').addEventListener('click', () => run(true));
