@@ -20,7 +20,7 @@ h1{font-size:clamp(2.4rem,6vw,4.2rem);letter-spacing:-.06em;margin:27px 0 0}
 .workspace{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(0,1fr);gap:16px;align-items:start}
 .panel{border:1px solid var(--edge);border-radius:16px;background:var(--panel);padding:16px;min-width:0}
 .screen{position:relative;height:clamp(230px,38vw,455px);background:#090a0d;border-radius:11px;display:grid;place-items:center;overflow:hidden}
-video,canvas{width:100%;height:100%;min-height:0;object-fit:contain}#maskOverlay{position:absolute;border:2px solid #bff58a;background:rgba(191,245,138,.13);touch-action:none;cursor:move;z-index:3;box-shadow:0 0 0 1px #0008}#maskOverlay::after{content:"Drag to position";position:absolute;left:0;top:0;background:#151d12;color:#bff58a;font-size:10px;padding:2px 4px;white-space:nowrap}
+video,canvas{width:100%;height:100%;min-height:0;object-fit:contain}#subtitleOverlay{position:absolute;z-index:2;pointer-events:none;text-align:center;max-width:90%;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 2px 4px #000;transform:translate(-50%,-50%);font-weight:800}#subtitleRows{display:grid;gap:8px;margin-top:10px;max-height:250px;overflow:auto}#subtitleRows .subtitle-row{display:grid;grid-template-columns:65px 65px minmax(0,1fr) auto;gap:5px;align-items:center}#subtitleRows input{min-width:0;width:100%;font-size:13px;padding:7px 4px}#subtitleRows button{padding:7px 5px}#maskOverlay{position:absolute;border:2px solid #bff58a;background:rgba(191,245,138,.13);touch-action:none;cursor:move;z-index:3;box-shadow:0 0 0 1px #0008}#maskOverlay::after{content:"Drag to position";position:absolute;left:0;top:0;background:#151d12;color:#bff58a;font-size:10px;padding:2px 4px;white-space:nowrap}
 #empty{text-align:center;display:grid;gap:8px}
 .play{font-size:1.6rem;margin:0 0 6px}
 .transport{margin:12px 0}
@@ -70,7 +70,7 @@ footer{margin-top:15px}
 <p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
 <section class="panel viewer" aria-label="Source video">
-<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
+<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
 <div class="transport">
 <button type="button" id="play" data-edit disabled>Play source</button>
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
@@ -135,7 +135,23 @@ footer{margin-top:15px}
 </div>
 </div>
 </fieldset>
+<fieldset id="subtitles">
+<legend><span>04</span> Spoken subtitles</legend>
+<p>Transcribe the video with cloud AI, correct the words and burn timed subtitles into your exported clip.</p>
+<label class="check"><input id="showSubtitles" type="checkbox" checked> Show subtitles in preview and export</label>
+<div class="buttons" style="margin:10px 0"><button type="button" id="transcribeSubtitles">Auto Transcribe Speech</button><button type="button" id="addSubtitle">Add subtitle manually</button></div>
+<p id="subtitleStatus" role="status">Load a video to transcribe speech.</p>
+<div class="mask-grid">
+<label>Horizontal position<input id="subtitleX" type="range" min="10" max="90" value="50"></label>
+<label>Vertical position<input id="subtitleY" type="range" min="10" max="95" value="83"></label>
+<label>Font size<input id="subtitleSize" type="range" min="18" max="90" value="44"></label>
+<label>Text color<input id="subtitleColor" type="color" value="#ffffff" style="height:44px;padding:3px"></label>
+</div>
+<label class="check"><input id="subtitleBackground" type="checkbox" checked> Dark background behind words</label>
+<div id="subtitleRows"></div>
+</fieldset>
 <fieldset id="captionTools">
+<legend><span>05</span> AI social caption
 <legend><span>04</span> AI social caption</legend>
 <p>Use the original post caption as reference, then generate a fresh caption with emojis and hashtags. Review before posting.</p>
 <label>Original source caption<textarea id="sourceCaption" rows="3" maxlength="2000" placeholder="Fetched from social post when available, or paste the original caption here" style="display:block;width:100%;margin:6px 0 10px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
@@ -178,6 +194,8 @@ let originalUrl;
 let fetchingOriginal = false;
 let readingLinkFile = false;
 let detectingProfanity = false;
+let transcribingSubtitles = false;
+const subtitleSegments = [];
 let graph;
 let loaded = false;
 let running;
@@ -196,6 +214,7 @@ function setControls() {
   byId('stop').hidden = !running;
   if (running) byId('maskOverlay').hidden = true;
   byId('autoCensor').disabled = !loaded || !!running || detectingProfanity;
+  byId('transcribeSubtitles').disabled = !loaded || !!running || transcribingSubtitles;
 }
 
 function updateClock() {
@@ -221,6 +240,10 @@ function loadSource(url, name, local) {
   ranges.length = 0;
   renderRanges();
   byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
+  subtitleSegments.length = 0;
+  renderSubtitleRows();
+  byId('subtitleOverlay').hidden = true;
+  byId('subtitleStatus').textContent = 'Use Auto Transcribe Speech to generate subtitles.';
   byId('captionOutput').value = '';
   byId('sourceCaption').value = '';
   byId('copyCaption').disabled = true;
@@ -416,7 +439,7 @@ byId('maskOverlay').addEventListener('pointerdown', event => {
   overlay.addEventListener('pointerup',done);
   overlay.addEventListener('pointercancel',done);
 });
-window.addEventListener('resize',updateMaskOverlay);
+window.addEventListener('resize',()=>{updateMaskOverlay();updateSubtitleOverlay();});
 
 share.addEventListener('click', async () => {
   if (!exportFile) return;
@@ -449,6 +472,7 @@ video.addEventListener('loadedmetadata', () => {
   setControls();
   updateClock();
   updateMaskOverlay();
+  updateSubtitleOverlay();
   if (byId('filename').textContent === 'social-video.mp4') {
     linkStatus('Video downloaded and automatically selected — ready to edit (' + seconds(duration) + ' s).');
   }
@@ -463,7 +487,7 @@ video.addEventListener('error', () => {
   say(sourceUrl ? 'This browser could not read the video. Try a standard H.264 MP4.'
     : 'This link could not load as a video. Use a direct link that allows browser access, or choose a file.');
 });
-video.addEventListener('timeupdate', updateClock);
+video.addEventListener('timeupdate', () => {updateClock();updateSubtitleOverlay();});
 video.addEventListener('play', () => { byId('play').textContent = 'Pause source'; });
 video.addEventListener('pause', () => { byId('play').textContent = 'Play source'; });
 byId('seek').addEventListener('input', event => { video.currentTime = Number(event.target.value); });
@@ -646,6 +670,7 @@ function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
       }
     }
   }
+  drawSubtitle(video.currentTime);
   if (!teaser) return;
   const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * .037));
   ctx.font = 'bold ' + size + 'px system-ui';
@@ -852,9 +877,120 @@ async function run(exporting) {
     running = undefined;
     setControls();
     updateMaskOverlay();
+    updateSubtitleOverlay();
   }
 }
 
+
+
+function renderSubtitleRows() {
+  const root=byId('subtitleRows');
+  root.replaceChildren();
+  subtitleSegments.forEach((item,index)=>{
+    const row=document.createElement('div');
+    row.className='subtitle-row';
+    const from=document.createElement('input');from.type='number';from.step='.01';from.min='0';from.value=item.from;from.setAttribute('aria-label','Subtitle start');
+    const to=document.createElement('input');to.type='number';to.step='.01';to.min='0';to.value=item.to;to.setAttribute('aria-label','Subtitle end');
+    const words=document.createElement('input');words.type='text';words.value=item.text;words.maxLength=250;words.setAttribute('aria-label','Subtitle words');
+    const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remove subtitle');
+    from.addEventListener('change',()=>{item.from=Number(from.value);updateSubtitleOverlay();});
+    to.addEventListener('change',()=>{item.to=Number(to.value);updateSubtitleOverlay();});
+    words.addEventListener('input',()=>{item.text=words.value;updateSubtitleOverlay();});
+    remove.addEventListener('click',()=>{subtitleSegments.splice(index,1);renderSubtitleRows();updateSubtitleOverlay();});
+    row.append(from,to,words,remove);root.append(row);
+  });
+}
+function subtitleStyle() {
+  return {x:Number(byId('subtitleX').value)/100,y:Number(byId('subtitleY').value)/100,
+    size:Number(byId('subtitleSize').value),color:byId('subtitleColor').value,
+    background:byId('subtitleBackground').checked};
+}
+function activeSubtitle(time) {
+  return subtitleSegments.find(item=>time>=item.from&&time<item.to&&item.to>item.from&&item.text.trim());
+}
+function updateSubtitleOverlay() {
+  const overlay=byId('subtitleOverlay');
+  const item=activeSubtitle(video.currentTime);
+  overlay.hidden=!loaded||!byId('showSubtitles').checked||!item||video.hidden||!!running;
+  if (overlay.hidden)return;
+  const style=subtitleStyle();
+  const screen=document.querySelector('.screen').getBoundingClientRect();
+  const ratio=Math.min(screen.width/video.videoWidth,screen.height/video.videoHeight);
+  const w=video.videoWidth*ratio,h=video.videoHeight*ratio;
+  overlay.textContent=item.text;
+  overlay.style.left=((screen.width-w)/2+w*style.x)+'px';
+  overlay.style.top=((screen.height-h)/2+h*style.y)+'px';
+  overlay.style.fontSize=Math.max(12,style.size*ratio)+'px';
+  overlay.style.color=style.color;
+  overlay.style.background=style.background?'#000b':'transparent';
+  overlay.style.padding=style.background?'3px 7px':'0';
+}
+function drawSubtitle(time) {
+  if (!byId('showSubtitles').checked)return;
+  const item=activeSubtitle(time);
+  if (!item)return;
+  const style=subtitleStyle();
+  const font=Math.max(14,Math.round(style.size*canvas.width/720));
+  ctx.save();ctx.font='800 '+font+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  const maxWidth=canvas.width*.85;
+  const words=item.text.trim().split(/\s+/),lines=[];let line='';
+  for(const word of words){
+    const next=line?line+' '+word:word;
+    if(line&&ctx.measureText(next).width>maxWidth){lines.push(line);line=word;}else line=next;
+  }
+  if(line)lines.push(line);
+  const step=font*1.28;
+  const x=canvas.width*style.x;
+  const centerY=canvas.height*style.y;
+  const firstY=centerY-(lines.length-1)*step/2;
+  ctx.fillStyle=style.color;
+  lines.forEach((text,i)=>{
+    const y=firstY+i*step;
+    if(style.background){
+      const width=Math.min(canvas.width*.94,ctx.measureText(text).width+font*.5);
+      ctx.fillStyle='rgba(0,0,0,.72)';
+      ctx.fillRect(x-width/2,y-step*.48,width,step*.96);
+    }
+    ctx.fillStyle=style.color;
+    ctx.shadowColor='#000';ctx.shadowBlur=font*.12;
+    ctx.fillText(text,x,y,maxWidth);
+    ctx.shadowBlur=0;
+  });
+  ctx.restore();
+}
+byId('transcribeSubtitles').addEventListener('click',async()=>{
+  if(!loaded||running||transcribingSubtitles)return;
+  transcribingSubtitles=true;setControls();
+  byId('subtitleStatus').textContent='Transcribing spoken words with cloud AI…';
+  try{
+    const response=await fetch(video.src);
+    if(!response.ok)throw new Error('Could not read the video.');
+    const blob=await response.blob();
+    if(blob.size>80*1024*1024)throw new Error('Video exceeds the 80 MB limit.');
+    const data=new FormData();data.append('file',blob,'video.mp4');
+    const api=byId('apiUrl').value.trim()||'https://clash-of-nation.onrender.com';
+    const result=await fetch(new URL('/api/transcribe-subtitles',api),{method:'POST',body:data});
+    const json=await result.json();
+    if(!result.ok)throw new Error(json.detail||'Transcription failed.');
+    subtitleSegments.length=0;
+    for(const item of json.segments||[]){
+      if(Number.isFinite(item.from)&&Number.isFinite(item.to)&&item.to>item.from)
+        subtitleSegments.push({from:item.from,to:item.to,text:String(item.text||'')});
+    }
+    renderSubtitleRows();updateSubtitleOverlay();
+    byId('subtitleStatus').textContent=subtitleSegments.length+' subtitle segments ready. Review the text and timing before exporting.';
+  }catch(error){byId('subtitleStatus').textContent=error.message||'Transcription failed.';}
+  finally{transcribingSubtitles=false;setControls();}
+});
+byId('addSubtitle').addEventListener('click',()=>{
+  const from=loaded?video.currentTime:0;
+  subtitleSegments.push({from:Number(from.toFixed(2)),to:Number(Math.min(from+2,video.duration||from+2).toFixed(2)),text:'Edit subtitle'});
+  renderSubtitleRows();updateSubtitleOverlay();
+});
+for(const id of ['subtitleX','subtitleY','subtitleSize','subtitleColor','subtitleBackground','showSubtitles']){
+  byId(id).addEventListener('input',updateSubtitleOverlay);
+  byId(id).addEventListener('change',updateSubtitleOverlay);
+}
 
 async function fetchSourceCaption(url) {
   byId('sourceCaption').value = '';
