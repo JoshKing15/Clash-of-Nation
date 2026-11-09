@@ -221,6 +221,7 @@ function loadSource(url, name, local) {
   renderRanges();
   byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
   byId('captionOutput').value = '';
+  byId('sourceCaption').value = '';
   byId('copyCaption').disabled = true;
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
@@ -319,8 +320,12 @@ byId('importLink').addEventListener('submit', async event => {
       linkStatus('Downloading social video through your API…');
       const blob = await fetchSocialVideo(url);
       loadSource(URL.createObjectURL(blob), 'social-video.mp4', true);
-      fetchSourceCaption(url.href);
-    } else loadSource(url.href, url.hostname, false);
+      await fetchSourceCaption(url.href);
+    } else {
+      loadSource(url.href, url.hostname, false);
+      byId('sourceCaption').value = '';
+      byId('captionStatus').textContent = 'Direct video files have no associated post caption. Use a social post URL to retrieve its caption.';
+    }
     linkStatus('Video downloaded. Preparing the editor…');
   } catch (error) {
     linkStatus(error.message);
@@ -818,13 +823,14 @@ async function fetchSourceCaption(url) {
     const result = await response.json();
     byId('sourceCaption').value = result.caption || '';
     byId('captionStatus').textContent = result.caption
-      ? 'Original caption loaded. Edit it or generate a new one.'
+      ? 'Original caption retrieved from the social post. Generating your new caption…'
       : 'This post has no available caption. Add a description to generate one.';
+    if (result.caption) await generateSocialCaption();
   } catch {
     byId('captionStatus').textContent = 'Original caption unavailable. Paste the post caption or describe the video.';
   }
 }
-byId('generateCaption').addEventListener('click', async () => {
+async function generateSocialCaption() {
   const source_caption = byId('sourceCaption').value.trim();
   const video_context = byId('videoContext').value.trim();
   if (!source_caption && !video_context) {
@@ -848,7 +854,8 @@ byId('generateCaption').addEventListener('click', async () => {
   } catch (error) {
     byId('captionStatus').textContent = error.message;
   } finally {button.disabled = false;}
-});
+}
+byId('generateCaption').addEventListener('click', generateSocialCaption);
 byId('captionOutput').addEventListener('input', () => {
   byId('copyCaption').disabled = !byId('captionOutput').value.trim();
 });
