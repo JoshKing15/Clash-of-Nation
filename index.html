@@ -148,6 +148,7 @@ footer{margin-top:15px}
 <label>Text color<input id="subtitleColor" type="color" value="#ffffff" style="height:44px;padding:3px"></label>
 </div>
 <label>Writing style<select id="subtitleFont"><option value="classic">Classic</option><option value="bold">Bold</option><option value="typewriter">Typewriter</option><option value="serif">Serif</option><option value="neon">Neon Glow</option><option value="outline">Outline</option><option value="shadow">Drop Shadow</option></select></label>
+<label class="check"><input id="maskSubtitleProfanity" type="checkbox" checked> Replace swear-word middle letters with symbols ($ # @ % €)</label>
 <label class="check"><input id="subtitleBackground" type="checkbox" checked> Dark background behind words</label>
 <div id="subtitleRows"></div>
 </fieldset>
@@ -912,6 +913,19 @@ function subtitleStyle() {
     size:Number(byId('subtitleSize').value),color:byId('subtitleColor').value,
     background:byId('subtitleBackground').checked,font:byId('subtitleFont').value};
 }
+
+const subtitleProfanity = new Set(['fuck','fucking','fucked','fucker','motherfucker','shit','shitty','bullshit','bitch','bitches','asshole','assholes','cunt','dick','cock','pussy','bastard','wanker','twat']);
+function subtitleDisplayText(text) {
+  if (!byId('maskSubtitleProfanity').checked) return text;
+  const symbols = '$#@%€';
+  return text.replace(/[A-Za-z]+/g, word => {
+    if (!subtitleProfanity.has(word.toLowerCase()) || word.length < 3) return word;
+    let middle = '';
+    for (let i=0;i<word.length-2;i++) middle += symbols[i%symbols.length];
+    return word[0]+middle+word[word.length-1];
+  });
+}
+
 function activeSubtitle(time) {
   return subtitleSegments.find(item=>time>=item.from&&time<item.to&&item.to>item.from&&item.text.trim());
 }
@@ -924,7 +938,7 @@ function updateSubtitleOverlay() {
   const screen=document.querySelector('.screen').getBoundingClientRect();
   const ratio=Math.min(screen.width/video.videoWidth,screen.height/video.videoHeight);
   const w=video.videoWidth*ratio,h=video.videoHeight*ratio;
-  overlay.textContent=item.text;
+  overlay.textContent=subtitleDisplayText(item.text);
   overlay.style.left=((screen.width-w)/2+w*style.x)+'px';
   overlay.style.top=((screen.height-h)/2+h*style.y)+'px';
   overlay.style.fontSize=Math.max(12,style.size*ratio)+'px';
@@ -949,7 +963,7 @@ function drawSubtitle(time) {
   ctx.font=(style.font==='serif'?'italic ':'')+weight+' '+font+'px '+family;
   ctx.textAlign='center';ctx.textBaseline='middle';
   const maxWidth=canvas.width*.85;
-  const words=item.text.trim().split(/\s+/),lines=[];let line='';
+  const words=subtitleDisplayText(item.text).trim().split(/\s+/),lines=[];let line='';
   for(const word of words){
     const next=line?line+' '+word:word;
     if(line&&ctx.measureText(next).width>maxWidth){lines.push(line);line=word;}else line=next;
@@ -1011,7 +1025,7 @@ byId('addSubtitle').addEventListener('click',()=>{
   subtitleSegments.push({from:Number(from.toFixed(2)),to:Number(Math.min(from+2,video.duration||from+2).toFixed(2)),text:'Edit subtitle'});
   renderSubtitleRows();updateSubtitleOverlay();
 });
-for(const id of ['subtitleX','subtitleY','subtitleSize','subtitleColor','subtitleBackground','showSubtitles','subtitleFont']){
+for(const id of ['subtitleX','subtitleY','subtitleSize','subtitleColor','subtitleBackground','showSubtitles','subtitleFont','maskSubtitleProfanity']){
   byId(id).addEventListener('input',updateSubtitleOverlay);
   byId(id).addEventListener('change',updateSubtitleOverlay);
 }
