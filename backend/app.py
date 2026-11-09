@@ -223,3 +223,53 @@ async def generate_caption(request: CaptionRequest):
         return {"caption":caption[:1200]}
     except Exception as exc:
         raise HTTPException(status_code=502,detail=str(exc)[:180])
+
+def subtitle_transcription(video_path: str, audio_path: str):
+    import subprocess, httpx
+    subprocess.run(["ffmpeg","-nostdin","-v","error","-y","-i",video_path,
+                    "-vn","-ac","1","-ar","16000","-b:a","48k","-t","180",audio_path],
+                   check=True,timeout=45)
+    with open(audio_path,"rb") as audio:
+        response=httpx.post("https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization":"Bearer "+os.environ["GROQ_API_KEY"]},
+            data={"model":"whisper-large-v3-turbo","response_format":"verbose_json",
+                  "timestamp_granularities[]":"segment"},
+            files={"file":("audio.mp3",audio,"audio/mpeg")},timeout=100)
+    if response.status_code != 200:
+        try:
+            error=response.json().get("error",{}).get("message","")
+        except Exception:
+            error=""
+        raise ValueError("Transcription failed (HTTP "+str(response.status_code)+"): "+str(error)[:120])
+    result=response.json()
+    segments=[]
+    for item in result.get("segments",[])[:300]:
+        start=max(0,float(item.get("start",0)))
+        end=float(item.get("end",start))
+        text=str(item.get("text","")).strip()
+        if end>start and text:
+            segments.append({"from":round(start,2),"to":round(end,2),"text":text[:250]})
+    return {"segments":segments,"language":result.get("language")}
+
+@app.post("/api/transcribe-subtitles")
+async def transcribe_subtitles(file: UploadFile = File(...)):
+    if not os.getenv("GROQ_API_KEY"):
+        raise HTTPException(status_code=503,detail="GROQ_API_KEY is missing in Render.")
+    if file.content_type not in ("video/mp4","video/webm","video/quicktime","application/octet-stream"):
+        raise HTTPException(status_code=400,detail="Upload an MP4, WebM or MOV video.")
+    with tempfile.TemporaryDirectory(prefix="clash-sub-") as folder:
+        path=str(pathlib.Path(folder)/"source.mp4")
+        size=0
+        with open(path,"wb") as output:
+            while chunk := await file.read(1024*1024):
+                size+=len(chunk)
+                if size>MAX_BYTES:
+                    raise HTTPException(status_code=413,detail="Video exceeds 80 MB.")
+                output.write(chunk)
+        if not size:
+            raise HTTPException(status_code=400,detail="Empty video.")
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(
+                subtitle_transcription,path,str(pathlib.Path(folder)/"audio.mp3")),timeout=145)
+        except Exception as exc:
+            raise HTTPException(status_code=422,detail=str(exc)[:220])
