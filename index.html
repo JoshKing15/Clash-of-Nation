@@ -61,6 +61,8 @@ footer{margin-top:15px}
 [hidden]{display:none!important}
 @media(max-width:760px){main{padding:19px 13px}button,.upload{min-height:44px}input[type=url],input[type=number],select{font-size:16px}.workspace{grid-template-columns:1fr}.badge{font-size:.63rem}.screen{height:clamp(220px,60vw,380px)}}
 
+#importPanel{margin-top:8px}#importPanel>.import-summary{cursor:pointer;list-style:none;min-height:44px;padding:10px 12px;border:1px solid var(--edge);border-radius:10px;background:#1d232a;font-weight:650;display:flex;align-items:center;justify-content:space-between;gap:8px}#importPanel>.import-summary::before{content:"▸";color:var(--accent)}#importPanel[open]>.import-summary::before{content:"▾"}#currentVideoName{font-size:12px;font-weight:400;color:var(--muted);max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#importPanel .import-body{padding:12px 2px 4px}#importPanel .import-body>details{margin-top:12px}#importPanel .import-body>details>summary{cursor:pointer;min-height:44px;padding:10px 0}
+@media(max-width:760px){.viewer{position:relative!important;top:auto!important}.screen{height:min(29dvh,260px)!important;min-height:155px!important}.tool-nav{position:relative!important}.controls .actions{position:relative!important}}
 /* Professional mobile-first workspace: existing editor IDs and processing code preserved */
 :root{--bg:#0b0d10;--panel:#14181d;--edge:#2a323b;--ink:#f2f4f7;--muted:#aeb7c3;--accent:#ff6655}
 body{background:var(--bg);font:16px/1.45 -apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif}
@@ -86,14 +88,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .badge{display:none}
  .intro{margin-bottom:12px}
  .workspace{gap:8px}
- .viewer{top:0;z-index:8;padding:8px;border-radius:0 0 12px 12px;box-shadow:0 6px 20px #0007}
- .screen{height:min(36dvh,320px);min-height:185px}
+ .viewer{position:relative;top:auto;z-index:auto;padding:8px;border-radius:12px;box-shadow:none}
+ .screen{height:min(29dvh,260px);min-height:155px}
  .transport{margin:6px 0;gap:6px}
  .transport #play{padding:5px 9px}
  .transport output{font-size:12px}
  .controls{padding:10px}
- .tool-nav{top:0}
- .controls .actions{bottom:env(safe-area-inset-bottom,0px)}
+ .tool-nav{position:relative;top:auto}
+ .controls .actions{position:relative;bottom:auto}
  .subtitle-row input{font-size:16px!important}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
@@ -113,7 +115,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
 <output id="clock">0.00 / 0.00 s</output>
 </div>
-<label class="upload">Choose from Photos or Files<input type="file" id="file" accept="video/*,.mov,.mkv,.mp4,.webm"></label>
+<details id="importPanel" open><summary class="import-summary">Import / change video <span id="currentVideoName"></span></summary><div class="import-body"><label class="upload">Choose from Photos or Files<input type="file" id="file" accept="video/*,.mov,.mkv,.mp4,.webm"></label>
 <span id="filename">MP4 or another format your browser can play</span>
 <details>
 <summary>Import from a direct video link</summary>
@@ -129,7 +131,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <details class="advanced"><summary>Advanced downloader settings</summary><label>Video downloader API URL <input id="apiUrl" type="url" placeholder="https://clash-of-nation.onrender.com" autocomplete="url" value="https://clash-of-nation.onrender.com"></label></details>
 <p id="linkStatus" role="status">Put a direct HTTPS video URL on its own line in a text file.</p>
 <p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
-</details>
+</details></div></details>
 </section>
 <section class="panel controls" aria-label="Editing controls">
 <nav class="tool-nav" aria-label="Editing tools">
@@ -327,6 +329,7 @@ function loadSource(url, name, local) {
   if (local) video.removeAttribute('crossorigin');
   else video.crossOrigin = 'anonymous';
   byId('filename').textContent = name;
+  byId('currentVideoName').textContent = name;
   say('Loading video…');
   video.hidden = true;
   byId('empty').hidden = false;
@@ -526,6 +529,8 @@ video.addEventListener('loadedmetadata', () => {
     return;
   }
   loaded = true;
+  byId('importPanel').open = false;
+  byId('currentVideoName').textContent = byId('filename').textContent;
   video.hidden = false;
   byId('empty').hidden = true;
   const duration = video.duration;
