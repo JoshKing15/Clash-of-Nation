@@ -100,7 +100,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 
-.caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}</style>
+.caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}#recentLinksList{max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch} @media(max-width:760px){.viewer:has(#importPanel[open]){position:relative!important;top:auto!important;z-index:auto!important;box-shadow:none!important}}</style>
 
 </head>
 <body>
@@ -129,7 +129,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <button type="button" id="fetchOriginal">Download original</button>
 <a id="saveOriginal" hidden>Save original video</a>
 </div>
-<details id="recentLinksPanel" open><summary>Recent video links (last 5)</summary><div id="recentLinksList" class="recent-links" aria-live="polite"></div><small>Saved on this browser only. Select a link to use it again; the oldest drops off after five.</small></details>
+<details id="recentLinksPanel"><summary>Recent video links (last 5)</summary><div id="recentLinksList" class="recent-links" aria-live="polite"></div><small>Saved on this browser only. Select a link to use it again; the oldest drops off after five.</small></details>
 <details class="advanced"><summary>Advanced downloader settings</summary><label>Video downloader API URL <input id="apiUrl" type="url" placeholder="https://clash-of-nation.onrender.com" autocomplete="url" value="https://clash-of-nation.onrender.com"></label></details>
 <p id="linkStatus" role="status">Put a direct HTTPS video URL on its own line in a text file.</p>
 <p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
