@@ -139,6 +139,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .workspace>.controls .tool-nav{position:sticky;top:0;z-index:3}
  .workspace>.controls .actions{position:sticky;bottom:0;z-index:3}
 }
+
+/* Dedicated visible scrollbar tracks for both independent panels. */
+@media(max-width:760px){
+ .workspace>.scroll-pane{position:relative;display:flex;flex:1 1 0;min-height:0;overflow:hidden}
+ .workspace>.scroll-pane>.viewer,.workspace>.scroll-pane>.controls{
+   position:relative!important;top:auto!important;bottom:auto!important;
+   height:100%!important;max-height:none!important;min-height:0!important;
+   flex:1 1 auto;min-width:0;overflow-y:scroll!important;overflow-x:hidden!important;
+   -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+   touch-action:pan-y;scrollbar-width:none;
+ }
+ .workspace>.scroll-pane>.viewer::-webkit-scrollbar,.workspace>.scroll-pane>.controls::-webkit-scrollbar{display:none}
+ .scroll-rail{position:absolute;right:2px;top:5px;bottom:5px;width:7px;border-radius:8px;background:rgba(125,125,125,.22);z-index:12;touch-action:none}
+ .scroll-thumb{position:absolute;top:0;left:0;right:0;height:35%;border-radius:8px;background:#8b96a8;min-height:26px;touch-action:none}
+}
+@media(min-width:761px){.scroll-rail{display:none}}
 </style>
 
 </head>
@@ -1286,6 +1302,46 @@ document.addEventListener('visibilitychange', () => {
     running.abort(new Error('Editing stopped when the tab was hidden. Keep this tab visible during playback.'));
   }
 });
+
+/* Separate visible scrollbar rails, including on iOS where native bars fade away. */
+(function setupIndependentScrollbars(){
+  const workspace=document.querySelector('.workspace');
+  if(!workspace)return;
+  for(const selector of ['.viewer','.controls']){
+    const panel=workspace.querySelector(':scope > '+selector);
+    if(!panel)continue;
+    const wrapper=document.createElement('div');wrapper.className='scroll-pane';
+    panel.before(wrapper);wrapper.append(panel);
+    const rail=document.createElement('div');rail.className='scroll-rail';
+    rail.setAttribute('aria-hidden','true');
+    const thumb=document.createElement('div');thumb.className='scroll-thumb';
+    rail.append(thumb);wrapper.append(rail);
+    const update=()=>{
+      const viewport=panel.clientHeight, content=panel.scrollHeight;
+      const track=rail.clientHeight;
+      const thumbSize=Math.min(track,Math.max(26,track*viewport/Math.max(content,1)));
+      thumb.style.height=thumbSize+'px';
+      thumb.style.transform='translateY('+((content>viewport)?(panel.scrollTop/(content-viewport))*(track-thumbSize):0)+'px)';
+      rail.style.opacity=content>viewport+2?'1':'0.35';
+    };
+    panel.addEventListener('scroll',update,{passive:true});
+    const observer=new ResizeObserver(update);observer.observe(panel);
+    const contentObserver=new MutationObserver(update);contentObserver.observe(panel,{subtree:true,childList:true,attributes:false});
+    let activePointer=null;
+    const move=e=>{
+      if(activePointer!==e.pointerId)return;
+      const bounds=rail.getBoundingClientRect(),travel=Math.max(1,rail.clientHeight-thumb.offsetHeight);
+      const ratio=Math.max(0,Math.min(1,(e.clientY-bounds.top-thumb.offsetHeight/2)/travel));
+      panel.scrollTop=ratio*(panel.scrollHeight-panel.clientHeight);
+    };
+    rail.addEventListener('pointerdown',e=>{activePointer=e.pointerId;rail.setPointerCapture(e.pointerId);move(e);});
+    rail.addEventListener('pointermove',move);
+    rail.addEventListener('pointerup',()=>{activePointer=null;});
+    rail.addEventListener('pointercancel',()=>{activePointer=null;});
+    window.addEventListener('resize',update,{passive:true});
+    requestAnimationFrame(update);
+  }
+})();
 </script>
 </body>
 </html>
