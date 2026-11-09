@@ -292,7 +292,7 @@ async function fetchSocialVideo(url) {
   if (!blob.size || blob.type.startsWith('text/')) throw new Error('Downloader returned no video.');
   return blob;
 }
-function isSocialPost(url) { return /(^|\\.)(facebook\\.com|fb\\.watch|twitter\\.com|x\\.com|youtube\\.com|youtu\\.be|tiktok\\.com)$/i.test(url.hostname) && !/\\.(mp4|mov|webm)$/i.test(url.pathname); }
+function isSocialPost(url) { return /(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/i.test(url.hostname) && !/\.(mp4|mov|webm)$/i.test(url.pathname); }
 byId('importLink').addEventListener('submit', async event => {
   event.preventDefault();
   if (running || fetchingOriginal || readingLinkFile) return;
