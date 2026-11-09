@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Clash of Nations · Clip Editor</title>
 <style>
 :root{color-scheme:dark;--bg:#101115;--panel:#181a20;--edge:#30333e;--ink:#f5f5f7;--muted:#b0b4c2;--accent:#bff58a}
@@ -60,6 +60,43 @@ progress{width:100%;margin-top:12px;accent-color:var(--accent)}
 footer{margin-top:15px}
 [hidden]{display:none!important}
 @media(max-width:760px){main{padding:19px 13px}button,.upload{min-height:44px}input[type=url],input[type=number],select{font-size:16px}.workspace{grid-template-columns:1fr}.badge{font-size:.63rem}.screen{height:clamp(220px,60vw,380px)}}
+
+/* Professional mobile-first workspace: existing editor IDs and processing code preserved */
+:root{--bg:#0b0d10;--panel:#14181d;--edge:#2a323b;--ink:#f2f4f7;--muted:#aeb7c3;--accent:#ff6655}
+body{background:var(--bg);font:16px/1.45 -apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif}
+main{max-width:1320px}
+h1{font-size:clamp(1.5rem,4vw,2.5rem);margin:16px 0 0}
+.panel{background:var(--panel);border-color:var(--edge)}
+button,.upload{min-height:44px;touch-action:manipulation}
+input,select,textarea,button{font-size:16px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tool-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:16px;position:sticky;top:0;z-index:5;background:var(--panel);padding:6px 0 10px;border-bottom:1px solid var(--edge)}
+.tool-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#1d232a;border:1px solid transparent;border-radius:10px;padding:8px 3px;min-width:0;font-size:18px}
+.tool-nav button span{font-size:11px;white-space:nowrap}
+.tool-nav button[aria-pressed="true"]{color:#fff;background:#4c2625;border-color:var(--accent)}
+.controls fieldset.tool-hidden{display:none!important}
+.controls .actions{position:sticky;bottom:0;z-index:4;background:var(--panel);padding:12px 0;border-top:1px solid var(--edge);margin-top:12px}
+#export{background:var(--accent);border-color:var(--accent);color:#101115}
+.viewer{position:sticky;top:10px}
+.advanced{margin:10px 0}
+#status,#aiStatus,#subtitleStatus,#captionStatus,#linkStatus{overflow-wrap:anywhere}
+@media(max-width:760px){
+ main{padding:10px 10px calc(env(safe-area-inset-bottom,0px) + 20px)}
+ header{padding:8px 0}
+ .badge{display:none}
+ .intro{margin-bottom:12px}
+ .workspace{gap:8px}
+ .viewer{top:0;z-index:8;padding:8px;border-radius:0 0 12px 12px;box-shadow:0 6px 20px #0007}
+ .screen{height:min(36dvh,320px);min-height:185px}
+ .transport{margin:6px 0;gap:6px}
+ .transport #play{padding:5px 9px}
+ .transport output{font-size:12px}
+ .controls{padding:10px}
+ .tool-nav{top:0}
+ .controls .actions{bottom:env(safe-area-inset-bottom,0px)}
+ .subtitle-row input{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 </style>
 
 </head>
@@ -70,7 +107,7 @@ footer{margin-top:15px}
 <p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
 <section class="panel viewer" aria-label="Source video">
-<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Your video stays on your device.</small></div></div>
+<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Edit your video on your phone.</small></div></div>
 <div class="transport">
 <button type="button" id="play" data-edit disabled>Play source</button>
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
@@ -89,12 +126,19 @@ footer{margin-top:15px}
 <button type="button" id="fetchOriginal">Download original</button>
 <a id="saveOriginal" hidden>Save original video</a>
 </div>
-<label>Video downloader API URL <input id="apiUrl" type="url" placeholder="https://clash-of-nation.onrender.com" autocomplete="url" value="https://clash-of-nation.onrender.com"></label>
+<details class="advanced"><summary>Advanced downloader settings</summary><label>Video downloader API URL <input id="apiUrl" type="url" placeholder="https://clash-of-nation.onrender.com" autocomplete="url" value="https://clash-of-nation.onrender.com"></label></details>
 <p id="linkStatus" role="status">Put a direct HTTPS video URL on its own line in a text file.</p>
 <p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
 </details>
 </section>
 <section class="panel controls" aria-label="Editing controls">
+<nav class="tool-nav" aria-label="Editing tools">
+<button type="button" data-tool="edit" aria-pressed="true">✂️<span>Trim</span></button>
+<button type="button" data-tool="censor" aria-pressed="false">🔇<span>Censor</span></button>
+<button type="button" data-tool="brand" aria-pressed="false">🏷️<span>Brand</span></button>
+<button type="button" data-tool="subtitles" aria-pressed="false">Aa<span>Subtitles</span></button>
+<button type="button" data-tool="captionTools" aria-pressed="false">✨<span>AI Caption</span></button>
+</nav>
 <fieldset id="edit" disabled>
 <legend><span>01</span> Set the cut</legend>
 <div class="times">
@@ -113,7 +157,7 @@ footer{margin-top:15px}
 </fieldset>
 <fieldset id="censor" disabled>
 <legend><span>02</span> Censor words</legend>
-<p>Automatically find possible swear words with cloud AI, review the suggestions, or add beeps manually. Censor times follow the source video, including the teaser.</p><div class="buttons"><button type="button" id="autoCensor">Auto Detect Swear Words</button></div><p id="aiStatus" role="status">AI suggestions require GROQ_API_KEY on the Render backend. Manual censoring always works.</p>
+<p>Automatically find possible swear words with cloud AI, review the suggestions, or add beeps manually. Censor times follow the source video, including the teaser.</p><div class="buttons"><button type="button" id="autoCensor">Auto Detect Swear Words</button></div><p id="aiStatus" role="status">Tap Auto Detect to scan speech. Manual censoring is also available.</p>
 <div class="censorTimes">
 <label>From (s)<input type="number" id="from" min="0" step=".01" value="0"></label>
 <label>To (s)<input type="number" id="to" min="0" step=".01" value=".5"></label>
@@ -122,7 +166,7 @@ footer{margin-top:15px}
 <div class="buttons"><button type="button" data-mark="from">Mark from</button><button type="button" data-mark="to">Mark to</button><button type="button" id="add">Add censor</button></div>
 <ul id="ranges"></ul>
 </fieldset>
-<fieldset disabled>
+<fieldset id="brandPanel" disabled>
 <legend><span>03</span> Watermarks</legend>
 <label class="check"><input type="checkbox" id="brand" checked> Add the Clash of Nations logo</label>
 <label class="check"><input type="checkbox" id="mask"> Cover an existing watermark</label>
@@ -177,6 +221,24 @@ footer{margin-top:15px}
 'use strict';
 
 const byId = id => document.getElementById(id);
+
+/* One tool at a time: keeps all existing IDs and event handlers intact. */
+const toolPanels = {edit:'edit',censor:'censor',brand:'brandPanel',subtitles:'subtitles',captionTools:'captionTools'};
+function openEditorTool(name) {
+  if (!toolPanels[name]) return;
+  for (const [key,id] of Object.entries(toolPanels)) {
+    byId(id).classList.toggle('tool-hidden',key!==name);
+  }
+  document.querySelectorAll('.tool-nav [data-tool]').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.tool===name));
+  });
+}
+document.querySelector('.tool-nav').addEventListener('click',event=>{
+  const button=event.target.closest('button[data-tool]');
+  if(button)openEditorTool(button.dataset.tool);
+});
+openEditorTool('edit');
+
 const video = byId('video');
 const canvas = byId('canvas');
 const ctx = canvas.getContext('2d', {alpha: false});
