@@ -106,6 +106,8 @@ footer{margin-top:15px}
 <label>Teaser starts (s)<input type="number" id="hookStart" min="0" step=".01" value="0"></label><button type="button" data-mark="hookStart">Use playhead</button>
 <label>Teaser ends (s)<input type="number" id="hookEnd" min="0" step=".01" value="0"></label><button type="button" data-mark="hookEnd">Use playhead</button>
 </div>
+<label style="display:block;margin-top:12px">Teaser transition<select id="transition"><option value="impact">Impact Cut — flash + zoom</option><option value="fade">Smooth Fade</option><option value="zoom">Quick Zoom</option><option value="glitch">Digital Glitch</option><option value="cut">Hard Cut</option></select></label>
+<p>Transition plays at the end of the teaser when enabled.</p>
 </fieldset>
 <fieldset id="censor" disabled>
 <legend><span>02</span> Censor words</legend>
@@ -488,7 +490,7 @@ byId('add').addEventListener('click', () => {
   }
 });
 
-function draw(teaser) {
+function draw(teaser, transitionProgress = 0) {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   const {brand, mask} = watermarkSettings;
   if (mask) {
@@ -515,6 +517,30 @@ function draw(teaser) {
     const width = canvas.width * .15;
     const x = teaser ? canvas.width - margin - width : margin;
     ctx.drawImage(watermark, x, margin, width, width * watermark.naturalHeight / watermark.naturalWidth);
+  }
+  if (teaser && transitionProgress > 0) {
+    const style = byId('transition').value;
+    const p = Math.max(0, Math.min(1, transitionProgress));
+    if (style === 'impact' || style === 'zoom') {
+      const zoom = 1 + .14 * p;
+      const w = canvas.width * zoom, h = canvas.height * zoom;
+      ctx.drawImage(canvas, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
+    }
+    if (style === 'impact') {
+      ctx.fillStyle = 'rgba(255,255,255,' + (.85 * Math.pow(p, 5)) + ')';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    } else if (style === 'fade') {
+      ctx.fillStyle = 'rgba(0,0,0,' + p + ')';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    } else if (style === 'glitch') {
+      const slices = 9;
+      for (let i=0;i<slices;i++) {
+        const y = Math.floor(i*canvas.height/slices);
+        const h = Math.ceil(canvas.height/slices);
+        const shift = Math.sin(i*37+p*80)*canvas.width*.035*p;
+        ctx.drawImage(canvas,0,y,canvas.width,h,shift,y,canvas.width,h);
+      }
+    }
   }
   if (!teaser) return;
   const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * .037));
@@ -572,7 +598,12 @@ function playSegment(segment, onTick, signal) {
       const time = video.currentTime;
       if (video.ended || time >= segment.to) return finish();
       setAudio(time);
-      if (video.readyState >= 2) draw(segment.teaser);
+      if (video.readyState >= 2) {
+        const transitionLength = Math.min(.35, (segment.to-segment.from)*.4);
+        const transitionProgress = segment.teaser && transitionLength > 0
+          ? Math.max(0, (time - (segment.to-transitionLength))/transitionLength) : 0;
+        draw(segment.teaser, transitionProgress);
+      }
       onTick(time);
     }
     signal.addEventListener('abort', cancel, {once: true});
