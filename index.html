@@ -54,7 +54,7 @@ li{display:flex;justify-content:space-between;align-items:center;gap:10px;font-s
 li button{padding:4px 7px}
 #status,footer{font-size:.8rem}
 #status{margin:10px 0 0}
-.import-row{display:flex;gap:8px;margin-top:8px}.import-row input{min-width:0;flex:1}.mask-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mask-grid input{padding:0}.save-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.import-row{display:flex;gap:8px;margin-top:8px}.import-row input{min-width:0;flex:1}.link-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}.link-tools a{color:var(--accent)}.mask-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mask-grid input{padding:0}.save-actions{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
 #download{display:inline-block;margin-top:12px;color:var(--accent)}
 progress{width:100%;margin-top:12px;accent-color:var(--accent)}
 footer{margin-top:15px}
@@ -84,6 +84,12 @@ footer{margin-top:15px}
 <input id="videoUrl" type="url" required inputmode="url" autocomplete="off" aria-label="Direct HTTPS video link" placeholder="https://…/video.mp4">
 <button id="importButton">Import</button>
 </form>
+<div class="link-tools">
+<label class="upload">Choose link file<input id="linkFile" type="file" accept=".txt,.url,.webloc,text/plain"></label>
+<button type="button" id="fetchOriginal">Download original</button>
+<a id="saveOriginal" hidden>Save original video</a>
+</div>
+<p id="linkStatus" role="status">Put a direct HTTPS video URL on its own line in a text file.</p>
 <p>For a Facebook, X, YouTube or TikTok post, save the video using the platform’s download or export option when available, then choose it here. A direct HTTPS video link works if its host allows browser access.</p>
 </details>
 </section>
@@ -155,6 +161,9 @@ let sourceUrl;
 let exportUrl;
 let exportFile;
 let watermarkSettings;
+let originalUrl;
+let fetchingOriginal = false;
+let readingLinkFile = false;
 let graph;
 let loaded = false;
 let running;
@@ -166,8 +175,10 @@ const valueOf = id => byId(id).valueAsNumber;
 function setControls() {
   for (const control of editControls) control.disabled = !loaded || !!running;
   byId('file').disabled = !!running;
-  byId('importButton').disabled = !!running;
-  byId('videoUrl').disabled = !!running;
+  byId('videoUrl').disabled = !!running || fetchingOriginal;
+  byId('linkFile').disabled = !!running || fetchingOriginal || readingLinkFile;
+  byId('importButton').disabled = !!running || fetchingOriginal || readingLinkFile;
+  byId('fetchOriginal').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('stop').hidden = !running;
 }
 
@@ -216,26 +227,108 @@ byId('file').addEventListener('change', event => {
   event.target.value = '';
 });
 
-byId('importLink').addEventListener('submit', event => {
-  event.preventDefault();
-  if (running) return;
+const linkStatus = message => { byId('linkStatus').textContent = message; };
+const videoLink = byId('videoUrl');
+const originalDownload = byId('saveOriginal');
+
+function clearOriginalDownload() {
+  if (originalUrl) URL.revokeObjectURL(originalUrl);
+  originalUrl = undefined;
+  originalDownload.hidden = true;
+  originalDownload.removeAttribute('href');
+}
+
+function directVideoUrl(value) {
   let url;
   try {
-    url = new URL(byId('videoUrl').value);
+    url = new URL(value.trim());
   } catch {
-    say('Enter a complete direct video link.');
-    return;
+    throw new Error('Enter a complete direct video link.');
   }
   if (url.protocol !== 'https:' || url.username || url.password) {
-    say('Enter a direct HTTPS video link without login details.');
-    return;
+    throw new Error('Enter a direct HTTPS video link without login details.');
   }
-  if (/(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/.test(url.hostname)
+  if (/(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/i.test(url.hostname)
       && !/\.(mp4|mov|webm)$/i.test(url.pathname)) {
-    say('That is a social post link. Save the video to Photos or Files, then choose it here.');
+    throw new Error('This is a social post link. Save the video from the platform when available, then choose it from Photos or Files.');
+  }
+  return url;
+}
+
+videoLink.addEventListener('input', clearOriginalDownload);
+
+byId('linkFile').addEventListener('change', async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  readingLinkFile = true;
+  setControls();
+  try {
+    if (file.size > 64 * 1024) throw new Error('Choose a link file smaller than 64 KB.');
+    const text = await file.text();
+    const links = text.match(/https?:\/\/[^\s<>"']+/gi);
+    if (!links?.length) throw new Error('No video URL found. Put a direct HTTPS link on its own line.');
+    clearOriginalDownload();
+    videoLink.value = links[0].replaceAll('&amp;', '&');
+    directVideoUrl(videoLink.value);
+    linkStatus((links.length > 1 ? 'First link loaded. ' : 'Link loaded. ') + 'Tap Download original or Import.');
+  } catch (error) {
+    linkStatus(error.message);
+  } finally {
+    readingLinkFile = false;
+    setControls();
+  }
+});
+
+byId('importLink').addEventListener('submit', event => {
+  event.preventDefault();
+  if (running || fetchingOriginal || readingLinkFile) return;
+  try {
+    const url = directVideoUrl(videoLink.value);
+    loadSource(url.href, url.hostname, false);
+    linkStatus('Loading the video in the editor…');
+  } catch (error) {
+    linkStatus(error.message);
+  }
+});
+
+byId('fetchOriginal').addEventListener('click', async () => {
+  if (running || fetchingOriginal || readingLinkFile) return;
+  let url;
+  try {
+    url = directVideoUrl(videoLink.value);
+  } catch (error) {
+    linkStatus(error.message);
     return;
   }
-  loadSource(url.href, url.hostname, false);
+  clearOriginalDownload();
+  fetchingOriginal = true;
+  setControls();
+  linkStatus('Fetching the original video… Keep this page open.');
+  try {
+    const response = await fetch(url, {credentials: 'omit'});
+    if (!response.ok) throw new Error('The video host returned an error (' + response.status + ').');
+    const type = (response.headers.get('content-type') || '').split(';')[0].toLowerCase();
+    const extensionByType = {'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm', 'video/x-matroska': 'mkv'};
+    const pathExtension = url.pathname.match(/\.(mp4|mov|webm|mkv|avi|m4v|ogv|mpeg|mpg|3gp)$/i)?.[1].toLowerCase();
+    const extension = extensionByType[type] || pathExtension;
+    if (!type.startsWith('video/') && !(extension && (!type || type === 'application/octet-stream'))) {
+      await response.body?.cancel();
+      throw new Error('The link returned a webpage or a different file type. Use a direct video link.');
+    }
+    const blob = await response.blob();
+    if (!blob.size) throw new Error('The link returned an empty file.');
+    originalUrl = URL.createObjectURL(blob);
+    originalDownload.href = originalUrl;
+    originalDownload.download = 'original-video' + (extension ? '.' + extension : '');
+    originalDownload.hidden = false;
+    linkStatus('Ready. Tap Save original video to download it.');
+  } catch (error) {
+    linkStatus(error instanceof TypeError ? 'The browser could not download this link. Check that the host allows cross-origin downloads.' : error.message);
+  } finally {
+    fetchingOriginal = false;
+    setControls();
+  }
 });
 
 byId('mask').addEventListener('change', () => {
