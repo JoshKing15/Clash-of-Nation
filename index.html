@@ -254,7 +254,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <fieldset id="subtitles">
 <legend><span>04</span> Spoken subtitles</legend>
 <p>Transcribe the video with cloud AI, correct the words and burn timed subtitles into your exported clip.</p>
-<label class="check"><input id="showSubtitles" type="checkbox" checked> Show subtitles in preview and export</label>
+<label class="check"><input id="showSubtitles" type="checkbox"> Show subtitles in preview and export</label>
 <div class="buttons" style="margin:10px 0"><button type="button" id="transcribeSubtitles">Auto Transcribe Speech</button><button type="button" id="addSubtitle">Add subtitle manually</button></div>
 <p id="subtitleStatus" role="status">Load a video to transcribe speech.</p>
 <div class="mask-grid">
@@ -304,6 +304,7 @@ function openEditorTool(name) {
   document.querySelectorAll('.tool-nav [data-tool]').forEach(button=>{
     button.setAttribute('aria-pressed',String(button.dataset.tool===name));
   });
+  document.dispatchEvent(new Event('clash:layout-change'));
 }
 document.querySelector('.tool-nav').addEventListener('click',event=>{
   const button=event.target.closest('button[data-tool]');
@@ -390,6 +391,7 @@ function loadSource(url, name, local) {
   byId('captionVariants').replaceChildren();
   byId('captionCredit').value = '';
   byId('sourceCaption').value = '';
+  byId('videoContext').value = '';
   byId('copyCaption').disabled = true;
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
@@ -1036,6 +1038,7 @@ async function run(exporting) {
   }
   if (exporting && byId('showSubtitles').checked && !subtitleSegments.length) {
     say('No subtitles found. Tap Auto Transcribe Speech in section 04, review the words, then export. Or turn off Show subtitles to export without them.');
+    openEditorTool('subtitles');
     byId('subtitles').scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
@@ -1390,6 +1393,8 @@ document.addEventListener('visibilitychange', () => {
     panel.addEventListener('scroll',update,{passive:true});
     const observer=new ResizeObserver(update);observer.observe(panel);
     const contentObserver=new MutationObserver(update);contentObserver.observe(panel,{subtree:true,childList:true,attributes:false});
+    document.addEventListener('clash:layout-change',()=>requestAnimationFrame(update));
+    panel.querySelectorAll('details').forEach(details=>details.addEventListener('toggle',()=>requestAnimationFrame(update)));
     let activePointer=null;
     const move=e=>{
       if(activePointer!==e.pointerId)return;
