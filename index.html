@@ -290,9 +290,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
 <label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
-<label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
-<div id="effectRows" aria-live="polite"></div>
+<details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
 </fieldset>
 <div class="actions"><button type="button" id="preview" data-edit disabled>▶ Preview edited video</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
 <p style="margin:8px 0;color:#b9c2ce">Preview plays the full edited sequence with transitions, beeps, subtitles and watermark before export. Tap Stop to end the preview.</p>
@@ -350,6 +350,8 @@ let detectingProfanity = false;
 let transcribingSubtitles = false;
 const subtitleSegments = [];
 const reactionEffects = [];
+let importedEffectBuffer=null;
+let importedEffectName="";
 const transitionSeconds = () => Number(byId("transitionDuration").value);
 byId("transitionDuration").addEventListener("input", () => {
   byId("transitionDurationLabel").textContent = transitionSeconds().toFixed(1) + " seconds";
@@ -402,6 +404,8 @@ function loadSource(url, name, local) {
   renderSubtitleRows();
   reactionEffects.length = 0;
   renderReactionEffects();
+  importedEffectBuffer=null;importedEffectName='';byId('effectAudioFile').value='';
+  byId('effectSound').querySelector('[value="imported"]').disabled=true;
   byId("effectSuggestions").replaceChildren();
   byId('subtitleOverlay').hidden = true;
   byId('subtitleStatus').textContent = 'No subtitles yet. Tap Auto Transcribe Speech before exporting.';
@@ -993,13 +997,50 @@ byId('addEffect').addEventListener('click',()=>{
   if(!loaded||(!text&&!byId('effectEmoji').value&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
     say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
   }
-  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value});
+  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value,soundBuffer:byId('effectSound').value==='imported'?importedEffectBuffer:null});
   reactionEffects.sort((a,b)=>a.from-b.from);
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
 });
 
 let effectSoundNodes=[];
-function playEffectSound(kind){
+
+byId('effectAudioFile').addEventListener('change',async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  if(file.size>8*1024*1024||(!file.type.startsWith('audio/')&&!/\\.(mp3|wav|m4a|ogg)$/i.test(file.name))){
+    byId('effectAudioStatus').textContent='Choose an audio file under 8 MB.';return;
+  }
+  try{
+    const buffer=await audioGraph().audio.decodeAudioData(await file.arrayBuffer());
+    if(buffer.duration>30)throw Error('Maximum sound length is 30 seconds.');
+    importedEffectBuffer=buffer;importedEffectName=file.name;
+    byId('effectSound').querySelector('[value="imported"]').disabled=false;
+    byId('effectSound').value='imported';
+    byId('effectAudioStatus').textContent='Ready: '+file.name+'. Choose a timestamp and tap Add reaction overlay.';
+  }catch(error){byId('effectAudioStatus').textContent='Audio import failed: '+error.message;}
+});
+(async function loadPhoenixCatalog(){
+  const root=byId('phoenixCatalog');
+  try{
+    const response=await fetch('assets/sfx/phoenix-connection-catalog.json');
+    if(!response.ok)throw Error('catalogue unavailable');
+    const data=await response.json();
+    for(const item of data.items||[]){
+      const p=document.createElement('p'),a=document.createElement('a');
+      a.href=item.source_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=item.title;
+      p.append(a);root.append(p);
+    }
+  }catch{root.textContent='Catalogue unavailable offline.';}
+})();
+
+function playEffectSound(kind,buffer){
+  if(kind==='imported'){
+    if(!buffer||!graph)return;
+    const source=graph.audio.createBufferSource(),gain=graph.audio.createGain();
+    source.buffer=buffer;gain.gain.value=.55;source.connect(gain);
+    gain.connect(graph.output);gain.connect(graph.monitor);
+    source.onended=()=>{source.disconnect();gain.disconnect();};
+    source.start();source.stop(graph.audio.currentTime+Math.min(buffer.duration,5));return;
+  }
   const pitches={boom:110,scratch:850,reveal:440};
   if(!Object.prototype.hasOwnProperty.call(pitches,kind)||!graph)return;
   const audio=graph.audio,osc=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime+.01;
@@ -1084,7 +1125,7 @@ function playSegment(segment, onTick, signal) {
       const time = video.currentTime;
       if (video.ended || time >= segment.to) return finish();
       setAudio(time);
-      reactionEffects.forEach((item,index)=>{if(item.sound&&item.sound!=='none'&&!playedEffects.has(index)&&time>=item.from&&time<item.from+.15){playedEffects.add(index);playEffectSound(item.sound);}});
+      reactionEffects.forEach((item,index)=>{if(item.sound&&item.sound!=='none'&&!playedEffects.has(index)&&time>=item.from&&time<item.from+.15){playedEffects.add(index);playEffectSound(item.sound,item.soundBuffer);}});
       if (video.readyState >= 2) {
         const transitionLength = Math.min(transitionSeconds(), (segment.to-segment.from)*.45);
         const transitionProgress = segment.teaser && transitionLength > 0
