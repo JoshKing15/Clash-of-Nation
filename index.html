@@ -1009,9 +1009,9 @@ byId('suggestEffects').addEventListener('click',()=>{
   const root=byId('effectSuggestions');root.replaceChildren();
   if(!loaded||!subtitleSegments.length){byId('effectStatus').textContent='Use Auto Transcribe Speech in Subtitles first.';return;}
   const patterns=[
-    {re:/\\b(wait|what|really|seriously)\\b/i,text:'WAIT... WHAT?!',sound:'boom'},
-    {re:/\\b(stop|leave|enough|shout)\\b/i,text:'HOLD UP!',sound:'scratch'},
-    {re:/\\b(finally|revealed|surprise|truth)\\b/i,text:'THE REVEAL',sound:'reveal'}
+    {re:/\b(wait|what|really|seriously)\b/i,text:'WAIT... WHAT?!',sound:'boom'},
+    {re:/\b(stop|leave|enough|shout)\b/i,text:'HOLD UP!',sound:'scratch'},
+    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal'}
   ];
   let count=0,last=-10;
   for(const segment of subtitleSegments){
