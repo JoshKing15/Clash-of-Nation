@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "source": "Pixabay",
+  "status": "source_links_only",
+  "notes": "Images not bundled; download individual assets from Pixabay under applicable license before using. Not verified viral memes.",
+  "items": [
+    {
+      "id": "boom",
+      "title": "Comic BOOM Explosion",
+      "source_url": "https://pixabay.com/vectors/explosion-detonation-blast-burst-147909/",
+      "category": "impact",
+      "suggested_sound": "boom",
+      "file": null
+    },
+    {
+      "id": "shocked-monkey",
+      "title": "Shocked Monkey",
+      "source_url": "https://pixabay.com/vectors/astonished-face-monkey-shocked-2025066/",
+      "category": "shock",
+      "suggested_sound": "scratch",
+      "file": null
+    },
+    {
+      "id": "lol",
+      "title": "LOL Comic Sticker",
+      "source_url": "https://pixabay.com/vectors/exclamation-fun-sticker-2025975/",
+      "category": "laugh",
+      "suggested_sound": "reveal",
+      "file": null
+    },
+    {
+      "id": "shocked-emoji",
+      "title": "Shocked Emoji",
+      "source_url": "https://pixabay.com/illustrations/emoji-emotion-shocked-shocked-emoji-5574957/",
+      "category": "shock",
+      "suggested_sound": "scratch",
+      "file": null
+    },
+    {
+      "id": "horrified",
+      "title": "Horrified Smiley",
+      "source_url": "https://pixabay.com/vectors/graphic-horrified-smiley-emoji-4004029/",
+      "category": "shock",
+      "suggested_sound": "boom",
+      "file": null
+    },
+    {
+      "id": "wow",
+      "title": "WOW Reaction",
+      "source_url": "https://pixabay.com/vectors/admired-surprised-wow-icon-3000952/",
+      "category": "surprise",
+      "suggested_sound": "reveal",
+      "file": null
+    },
+    {
+      "id": "laughing",
+      "title": "Laughing Reaction",
+      "source_url": "https://pixabay.com/vectors/funny-emoticon-laughing-facebook-3000956/",
+      "category": "laugh",
+      "suggested_sound": "reveal",
+      "file": null
+    },
+    {
+      "id": "comic-blast",
+      "title": "Comic Blast",
+      "source_url": "https://pixabay.com/vectors/comic-blast-blast-effect-2340467/",
+      "category": "impact",
+      "suggested_sound": "boom",
+      "file": null
+    },
+    {
+      "id": "bang",
+      "title": "BANG Comic Bubble",
+      "source_url": "https://pixabay.com/illustrations/bang-explosion-boom-comic-cartoon-7169966/",
+      "category": "impact",
+      "suggested_sound": "boom",
+      "file": null
+    },
+    {
+      "id": "wow-man",
+      "title": "Surprised Cartoon Man",
+      "source_url": "https://pixabay.com/illustrations/cartoon-man-wow-expression-9882153/",
+      "category": "surprise",
+      "suggested_sound": "scratch",
+      "file": null
+    },
+    {
+      "id": "surprise-eyes",
+      "title": "Surprised Eyes",
+      "source_url": "https://pixabay.com/vectors/eyes-surprise-wow-expression-open-312093/",
+      "category": "shock",
+      "suggested_sound": "scratch",
+      "file": null
+    },
+    {
+      "id": "wow-bang",
+      "title": "WOW BANG Pop Art",
+      "source_url": "https://pixabay.com/vectors/wow-bang-explosion-pow-blast-155268/",
+      "category": "impact",
+      "suggested_sound": "boom",
+      "file": null
+    }
+  ]
+}
