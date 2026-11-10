@@ -289,7 +289,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Start (source seconds)<input id="effectStart" type="number" min="0" step=".01" value="0"></label><button type="button" id="effectUsePlayhead">Use playhead</button>
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
-<label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
+<label>Meme + sound combo<select id="effectCombo"><option value="">Custom / choose separately</option><option value="suspicious">Suspicious look + boom</option><option value="shocked">Shocked reaction + boom</option><option value="laugh">Laughing reaction + reveal</option><option value="awkward">Awkward side-eye + scratch</option><option value="confused">Confused reaction + scratch</option><option value="reveal">Big reveal + chime</option></select></label><p id="effectComboStatus">Choose a combo to set a matching reaction graphic and sound.</p><label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
 <details><summary>Browse 12 Pixabay meme-style reaction graphics</summary><p>Open a source, download the image from Pixabay, then import it below. Suggested sound pairings are provided.</p><div id="pixabayMemeCatalog"></div></details><label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
@@ -1002,6 +1002,24 @@ function renderReactionEffects(){
   });
 }
 byId('effectUsePlayhead').addEventListener('click',()=>{byId('effectStart').value=video.currentTime.toFixed(2);});
+
+const memeSoundCombos={
+ suspicious:{emoji:'🤨',sound:'boom',text:'SUS?!'},
+ shocked:{emoji:'😱',sound:'boom',text:'WHAT?!'},
+ laugh:{emoji:'🤣',sound:'reveal',text:'NO WAY!'},
+ awkward:{emoji:'👀',sound:'scratch',text:'AWKWARD...'},
+ confused:{emoji:'🤔',sound:'scratch',text:'HUH?!'},
+ reveal:{emoji:'🤯',sound:'reveal',text:'PLOT TWIST!'}
+};
+byId('effectCombo').addEventListener('change',event=>{
+  const combo=memeSoundCombos[event.target.value];
+  if(!combo){byId('effectComboStatus').textContent='Custom mode: select your own image, emoji and sound.';return;}
+  byId('effectEmoji').value=combo.emoji;
+  byId('effectSound').value=combo.sound;
+  byId('effectText').value=combo.text;
+  byId('effectComboStatus').textContent='Ready: '+combo.text+' + '+combo.sound+'. Optionally import a meme picture to replace the emoji.';
+});
+
 byId('addEffect').addEventListener('click',()=>{
   const text=byId('effectText').value.trim();
   const from=Number(byId('effectStart').value),duration=Number(byId('effectDuration').value);
@@ -1107,7 +1125,10 @@ byId('suggestEffects').addEventListener('click',()=>{
   const patterns=[
     {re:/\b(wait|what|really|seriously)\b/i,text:'WAIT... WHAT?!',sound:'boom',emoji:'😱'},
     {re:/\b(stop|leave|enough|shout)\b/i,text:'HOLD UP!',sound:'scratch',emoji:'👀'},
-    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal',emoji:'🤯'}
+    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal',emoji:'🤯'},
+    {re:/\b(laugh|funny|joke|hilarious)\b/i,text:'NO WAY!',sound:'reveal',emoji:'🤣'},
+    {re:/\b(confused|why|how|explain)\b/i,text:'HUH?!',sound:'scratch',emoji:'🤔'},
+    {re:/\b(suspicious|lying|lie|fake)\b/i,text:'SUS?!',sound:'boom',emoji:'👀'}
   ];
   let count=0,last=-10;
   for(const segment of subtitleSegments){
