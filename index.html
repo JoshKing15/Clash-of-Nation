@@ -290,7 +290,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
 <label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
-<label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
 </fieldset>
@@ -352,6 +352,8 @@ const subtitleSegments = [];
 const reactionEffects = [];
 let importedEffectBuffer=null;
 let importedEffectName="";
+let importedMemeImage=null;
+let importedMemeName="";
 const transitionSeconds = () => Number(byId("transitionDuration").value);
 byId("transitionDuration").addEventListener("input", () => {
   byId("transitionDurationLabel").textContent = transitionSeconds().toFixed(1) + " seconds";
@@ -405,6 +407,7 @@ function loadSource(url, name, local) {
   reactionEffects.length = 0;
   renderReactionEffects();
   importedEffectBuffer=null;importedEffectName='';byId('effectAudioFile').value='';
+  importedMemeImage=null;importedMemeName='';byId('effectImageFile').value='';
   byId('effectSound').querySelector('[value="imported"]').disabled=true;
   byId("effectSuggestions").replaceChildren();
   byId('subtitleOverlay').hidden = true;
@@ -958,7 +961,15 @@ function drawReactionEffect(time) {
   const item=reactionEffects.find(e=>time>=e.from && time<e.from+e.duration);
   if(!item)return;
   const text=(item.text||'').trim().slice(0,55);
-  if(!text&&!item.emoji)return;
+  if(!text&&!item.emoji&&!item.image)return;
+  if(item.image&&item.image.complete&&item.image.naturalWidth){
+    const maxWidth=canvas.width*Math.min(.8,Math.max(.15,item.imageSize||.38));
+    const maxHeight=canvas.height*.45;
+    const ratio=Math.min(maxWidth/item.image.naturalWidth,maxHeight/item.image.naturalHeight);
+    const w=item.image.naturalWidth*ratio,h=item.image.naturalHeight*ratio;
+    const cy=canvas.height*(item.position==='top'?.27:item.position==='bottom'?.7:.43);
+    ctx.drawImage(item.image,(canvas.width-w)/2,cy-h/2,w,h);
+  }
   if(item.emoji){
     ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.font=Math.round(Math.min(canvas.width,canvas.height)*.17)+'px system-ui,Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji';
@@ -982,7 +993,7 @@ function renderReactionEffects(){
   reactionEffects.forEach((item,index)=>{
     const row=document.createElement('div');row.className='subtitle-row';
     const label=document.createElement('span');
-    label.textContent=item.from.toFixed(2)+'s · '+item.duration.toFixed(1)+'s · '+item.text;
+    label.textContent=item.from.toFixed(2)+'s · '+item.duration.toFixed(1)+'s · '+(item.text||'Reaction')+' · '+(item.imageName||item.emoji||'')+' · '+(item.sound||'none');
     const preview=document.createElement('button');preview.type='button';preview.textContent='Go to';
     preview.addEventListener('click',()=>{video.currentTime=item.from;});
     const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';
@@ -994,12 +1005,28 @@ byId('effectUsePlayhead').addEventListener('click',()=>{byId('effectStart').valu
 byId('addEffect').addEventListener('click',()=>{
   const text=byId('effectText').value.trim();
   const from=Number(byId('effectStart').value),duration=Number(byId('effectDuration').value);
-  if(!loaded||(!text&&!byId('effectEmoji').value&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
+  if(!loaded||(!text&&!byId('effectEmoji').value&&!importedMemeImage&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
     say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
   }
-  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value,soundBuffer:byId('effectSound').value==='imported'?importedEffectBuffer:null});
+  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value,soundBuffer:byId('effectSound').value==='imported'?importedEffectBuffer:null,image:importedMemeImage,imageName:importedMemeName,imageSize:Number(byId('effectImageSize').value)/100});
   reactionEffects.sort((a,b)=>a.from-b.from);
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
+});
+
+
+byId('effectImageFile').addEventListener('change',async event=>{
+  const file=event.target.files?.[0];if(!file)return;
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>5*1024*1024){
+    byId('effectImageStatus').textContent='Choose a PNG, JPG or WebP under 5 MB.';return;
+  }
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image();img.src=url;await img.decode();
+    if(img.naturalWidth>4096||img.naturalHeight>4096)throw Error('Maximum picture dimensions: 4096px.');
+    importedMemeImage=img;importedMemeName=file.name;
+    byId('effectImageStatus').textContent='Ready: '+file.name+'. Add an effect to pair the picture with a sound.';
+  }catch(error){importedMemeImage=null;byId('effectImageStatus').textContent='Picture failed: '+error.message;}
+  finally{URL.revokeObjectURL(url);}
 });
 
 let effectSoundNodes=[];
