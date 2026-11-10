@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440">
+<defs><linearGradient id="silver" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".53" stop-color="#f9f9fa"/><stop offset="1" stop-color="#8b909b"/></linearGradient><linearGradient id="red" x2="0" y2="1"><stop stop-color="#ff544c"/><stop offset=".5" stop-color="#e40008"/><stop offset="1" stop-color="#9d0009"/></linearGradient><filter id="glow" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+<path d="M94 72H50V118 M666 72H710V118 M50 324V368H94 M666 368H710V324" fill="none" stroke="#ff151b" stroke-width="16" stroke-linecap="round" opacity=".6" filter="url(#glow)"/>
+<path d="M94 72H50V118 M666 72H710V118 M50 324V368H94 M666 368H710V324" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+<path d="M190 165L214 69L380 20L546 69L570 165L590 328L380 413L170 328Z" fill="#09090d" stroke="#ed1118" stroke-width="12"/>
+<path d="M198 168L221 76L380 31L539 76L562 168" fill="none" stroke="#ff6a64" stroke-width="5"/>
+<circle cx="380" cy="143" r="109" fill="#090c13" stroke="#e6e8eb" stroke-width="8"/>
+<ellipse cx="380" cy="143" rx="49" ry="109" fill="none" stroke="#d8dce2" stroke-width="5"/>
+<path d="M272 143H488 M293 93H467 M293 193H467 M380 34V251" fill="none" stroke="#d8dce2" stroke-width="5"/>
+<path d="M319 66L349 72L356 95L378 103L368 124L389 139L375 162L353 157L339 179L320 161L309 136L291 122L300 99Z M408 88L443 83L469 109L457 129L472 150L447 169L428 151L407 156L393 132Z" fill="#f2f3f4"/>
+<path d="M90 166L670 166L697 247L668 335L94 335L63 247Z" fill="#08090d" stroke="#fb2025" stroke-width="8"/>
+<path d="M111 180H649" stroke="#fff" stroke-width="3" opacity=".8"/>
+<text x="380" y="242" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="1000" font-style="italic" font-size="83" letter-spacing="-3" fill="url(#silver)" stroke="#111" stroke-width="2" paint-order="stroke">CLASH OF</text>
+<path d="M96 250H664L680 331H80Z" fill="#09090e" stroke="#f81820" stroke-width="5"/>
+<text x="380" y="317" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="1000" font-style="italic" font-size="91" letter-spacing="-2" fill="url(#red)" stroke="#340006" stroke-width="2" paint-order="stroke">NATIONS</text>
+<path d="M155 351Q366 337 603 352L424 359L214 371Z" fill="#fff"/>
+<path d="M210 379Q410 357 578 367L393 387Z" fill="#e60a12"/>
+<circle cx="610" cy="70" r="12" fill="#ff171b"/><text x="633" y="79" font-family="Arial,sans-serif" font-size="29" font-weight="bold" fill="#fff">REC</text>
+</svg>
