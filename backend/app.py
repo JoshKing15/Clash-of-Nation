@@ -80,7 +80,7 @@ def download(raw: str, folder: str):
     import json
     try:
         probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "stream=codec_name,codec_type,pix_fmt",
+            ["ffprobe", "-v", "error", "-show_entries", "stream=codec_name,codec_type,pix_fmt,width,height",
              "-of", "json", str(chosen)],
             capture_output=True, text=True, timeout=12, check=True)
         streams = json.loads(probe.stdout).get("streams", [])
@@ -92,6 +92,8 @@ def download(raw: str, folder: str):
         chosen.suffix.lower() == ".mp4"
         and video_stream.get("codec_name") == "h264"
         and video_stream.get("pix_fmt") in ("yuv420p", "yuvj420p")
+        and int(video_stream.get("width") or 0) % 2 == 0
+        and int(video_stream.get("height") or 0) % 2 == 0
         and all(stream.get("codec_name") == "aac" for stream in audio_streams)
     )
     if compatible:
@@ -101,6 +103,8 @@ def download(raw: str, folder: str):
     can_copy = (
         video_stream.get("codec_name") == "h264"
         and all(stream.get("codec_name") == "aac" for stream in audio_streams)
+        and int(video_stream.get("width") or 0) % 2 == 0
+        and int(video_stream.get("height") or 0) % 2 == 0
     )
     if can_copy:
         try:
@@ -115,7 +119,7 @@ def download(raw: str, folder: str):
             pass
     command = ["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-y", "-i", str(chosen),
                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264",
-               "-preset", "ultrafast", "-crf", "28", "-pix_fmt", "yuv420p",
+               "-preset", "ultrafast", "-crf", "28", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p",
                "-c:a", "aac", "-movflags", "+faststart", str(target)]
     try:
         result = subprocess.run(command, timeout=100, capture_output=True, text=True)
