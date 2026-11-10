@@ -197,6 +197,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <button type="button" data-tool="brand" aria-pressed="false">🏷️<span>Brand</span></button>
 <button type="button" data-tool="subtitles" aria-pressed="false">Aa<span>Subtitles</span></button>
 <button type="button" data-tool="captionTools" aria-pressed="false">✨<span>AI Caption</span></button>
+<button type="button" data-tool="effects" aria-pressed="false">🎬<span>Effects</span></button>
 </nav>
 <fieldset id="edit" disabled>
 <legend><span>01</span> Set the cut</legend>
@@ -280,6 +281,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label style="display:block;margin-top:10px">Selected caption (editable)<textarea id="captionOutput" rows="5" placeholder="Your editable caption will appear here" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:8px;background:#242731;color:inherit;border:1px solid #414554"></textarea></label>
 <p id="captionStatus" role="status">Caption generation uses the cloud backend. The original caption is editable.</p>
 </fieldset>
+<fieldset id="effects" disabled>
+<legend><span>06</span> Reaction moments — manual beta</legend>
+<p>Add an original text reaction overlay to an exact moment. It appears in Preview and Export. AI suggestions and licensed sound effects are planned for a later phase.</p>
+<label>Reaction text<input id="effectText" type="text" maxlength="55" placeholder="WAIT... WHAT?!"></label>
+<div class="times">
+<label>Start (source seconds)<input id="effectStart" type="number" min="0" step=".01" value="0"></label><button type="button" id="effectUsePlayhead">Use playhead</button>
+<label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
+</div>
+<label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
+<div id="effectRows" aria-live="polite"></div>
+</fieldset>
 <div class="actions"><button type="button" id="preview" data-edit disabled>▶ Preview edited video</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
 <p style="margin:8px 0;color:#b9c2ce">Preview plays the full edited sequence with transitions, beeps, subtitles and watermark before export. Tap Stop to end the preview.</p>
 <progress id="progress" max="1" value="0" hidden></progress>
@@ -295,7 +308,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 const byId = id => document.getElementById(id);
 
 /* One tool at a time: keeps all existing IDs and event handlers intact. */
-const toolPanels = {edit:'edit',censor:'censor',brand:'brandPanel',subtitles:'subtitles',captionTools:'captionTools'};
+const toolPanels = {edit:'edit',censor:'censor',brand:'brandPanel',subtitles:'subtitles',captionTools:'captionTools',effects:'effects'};
 function openEditorTool(name) {
   if (!toolPanels[name]) return;
   for (const [key,id] of Object.entries(toolPanels)) {
@@ -335,6 +348,7 @@ let readingLinkFile = false;
 let detectingProfanity = false;
 let transcribingSubtitles = false;
 const subtitleSegments = [];
+const reactionEffects = [];
 const transitionSeconds = () => Number(byId("transitionDuration").value);
 byId("transitionDuration").addEventListener("input", () => {
   byId("transitionDurationLabel").textContent = transitionSeconds().toFixed(1) + " seconds";
@@ -385,6 +399,8 @@ function loadSource(url, name, local) {
   byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
   subtitleSegments.length = 0;
   renderSubtitleRows();
+  reactionEffects.length = 0;
+  renderReactionEffects();
   byId('subtitleOverlay').hidden = true;
   byId('subtitleStatus').textContent = 'No subtitles yet. Tap Auto Transcribe Speech before exporting.';
   byId('captionOutput').value = '';
@@ -920,6 +936,7 @@ function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
       }
     }
   }
+  drawReactionEffect(video.currentTime);
   drawSubtitle(video.currentTime);
   if (!teaser) return;
   const size = Math.max(12, Math.round(Math.min(canvas.width, canvas.height) * .037));
@@ -931,6 +948,46 @@ function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
   ctx.fillText(text, size * 1.5, size * 2.17);
 }
 
+function drawReactionEffect(time) {
+  const item=reactionEffects.find(e=>time>=e.from && time<e.from+e.duration);
+  if(!item)return;
+  const text=item.text.trim().slice(0,55);
+  if(!text)return;
+  const size=Math.max(18,Math.round(Math.min(canvas.width,canvas.height)*.055));
+  ctx.save();
+  ctx.font='900 '+size+'px system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const y=canvas.height*(item.position==='top'?.2:item.position==='bottom'?.75:.48);
+  const maxWidth=canvas.width*.9;
+  ctx.lineWidth=Math.max(4,size*.14);ctx.strokeStyle='#111';
+  ctx.strokeText(text,canvas.width/2,y,maxWidth);
+  ctx.fillStyle='#fff';ctx.fillText(text,canvas.width/2,y,maxWidth);
+  ctx.restore();
+}
+function renderReactionEffects(){
+  const root=byId('effectRows');root.replaceChildren();
+  reactionEffects.forEach((item,index)=>{
+    const row=document.createElement('div');row.className='subtitle-row';
+    const label=document.createElement('span');
+    label.textContent=item.from.toFixed(2)+'s · '+item.duration.toFixed(1)+'s · '+item.text;
+    const preview=document.createElement('button');preview.type='button';preview.textContent='Go to';
+    preview.addEventListener('click',()=>{video.currentTime=item.from;});
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';
+    remove.addEventListener('click',()=>{reactionEffects.splice(index,1);renderReactionEffects();clearDownload();});
+    row.append(label,preview,remove);root.append(row);
+  });
+}
+byId('effectUsePlayhead').addEventListener('click',()=>{byId('effectStart').value=video.currentTime.toFixed(2);});
+byId('addEffect').addEventListener('click',()=>{
+  const text=byId('effectText').value.trim();
+  const from=Number(byId('effectStart').value),duration=Number(byId('effectDuration').value);
+  if(!loaded||!text||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
+    say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
+  }
+  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value});
+  reactionEffects.sort((a,b)=>a.from-b.from);
+  renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
+});
 function seekTo(time, signal) {
   signal.throwIfAborted();
   if (Math.abs(video.currentTime - time) < .002 && !video.seeking && video.readyState >= 2) {
