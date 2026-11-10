@@ -289,7 +289,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Start (source seconds)<input id="effectStart" type="number" min="0" step=".01" value="0"></label><button type="button" id="effectUsePlayhead">Use playhead</button>
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
-<label>Meme + sound combo<select id="effectCombo"><option value="">Custom / choose separately</option><option value="suspicious">Suspicious look + boom</option><option value="shocked">Shocked reaction + boom</option><option value="laugh">Laughing reaction + reveal</option><option value="awkward">Awkward side-eye + scratch</option><option value="confused">Confused reaction + scratch</option><option value="reveal">Big reveal + chime</option></select></label><p id="effectComboStatus">Choose a combo to set a matching reaction graphic and sound.</p><label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
+<label><input type="checkbox" id="autoMemes"> Automatically insert matching meme + sound after transcription (max 6)</label><p id="autoMemeStatus" role="status">Uses dialogue keywords; review the result before export.</p><label>Meme + sound combo<select id="effectCombo"><option value="">Custom / choose separately</option><option value="suspicious">Suspicious look + boom</option><option value="shocked">Shocked reaction + boom</option><option value="laugh">Laughing reaction + reveal</option><option value="awkward">Awkward side-eye + scratch</option><option value="confused">Confused reaction + scratch</option><option value="reveal">Big reveal + chime</option></select></label><p id="effectComboStatus">Choose a combo to set a matching reaction graphic and sound.</p><label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
 <details><summary>Browse 12 Pixabay meme-style reaction graphics</summary><p>Open a source, download the image from Pixabay, then import it below. Suggested sound pairings are provided.</p><div id="pixabayMemeCatalog"></div></details><label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
@@ -354,6 +354,9 @@ let importedEffectBuffer=null;
 let importedEffectName="";
 let importedMemeImage=null;
 let importedMemeName="";
+const builtInMemes={};
+const builtInMemePaths=['suspicious','shocked','laugh','awkward','confused','reveal'];
+for(const id of builtInMemePaths){const image=new Image();image.src='assets/memes/original/'+id+'.svg';builtInMemes[id]=image;}
 const transitionSeconds = () => Number(byId("transitionDuration").value);
 byId("transitionDuration").addEventListener("input", () => {
   byId("transitionDurationLabel").textContent = transitionSeconds().toFixed(1) + " seconds";
@@ -970,7 +973,7 @@ function drawReactionEffect(time) {
     const cy=canvas.height*(item.position==='top'?.27:item.position==='bottom'?.7:.43);
     ctx.drawImage(item.image,(canvas.width-w)/2,cy-h/2,w,h);
   }
-  if(item.emoji){
+  if(item.emoji&&!item.image){
     ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.font=Math.round(Math.min(canvas.width,canvas.height)*.17)+'px system-ui,Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji';
     ctx.fillText(item.emoji,canvas.width/2,canvas.height*(item.position==='top'?.28:item.position==='bottom'?.68:.4));
@@ -1017,6 +1020,8 @@ byId('effectCombo').addEventListener('change',event=>{
   byId('effectEmoji').value=combo.emoji;
   byId('effectSound').value=combo.sound;
   byId('effectText').value=combo.text;
+  importedMemeImage=builtInMemes[event.target.value];importedMemeName=event.target.value+' (built-in)';
+  byId('effectImageStatus').textContent='Built-in meme ready: '+event.target.value+'. No download required.';
   byId('effectComboStatus').textContent='Ready: '+combo.text+' + '+combo.sound+'. Optionally import a meme picture to replace the emoji.';
 });
 
@@ -1119,6 +1124,32 @@ function playEffectSound(kind,buffer){
   osc.onended=()=>{osc.disconnect();gain.disconnect();effectSoundNodes=effectSoundNodes.filter(n=>n.osc!==osc);};
   osc.start(start);osc.stop(start+.38);
 }
+
+const autoMemeRules=[
+ {id:'suspicious',re:/\b(suspicious|lying|lie|fake|seriously)\b/i},
+ {id:'shocked',re:/\b(wait|what|really|shocked|unbelievable)\b/i},
+ {id:'laugh',re:/\b(laugh|funny|joke|hilarious|ridiculous)\b/i},
+ {id:'awkward',re:/\b(stop|leave|enough|awkward|silence)\b/i},
+ {id:'confused',re:/\b(confused|why|how|explain)\b/i},
+ {id:'reveal',re:/\b(finally|revealed|surprise|truth)\b/i}
+];
+function autoInsertMemes(){
+ if(!byId('autoMemes').checked||!loaded||!subtitleSegments.length)return;
+ reactionEffects.splice(0,reactionEffects.length,...reactionEffects.filter(e=>!e.autoMeme));
+ let count=0,last=-10;
+ for(const segment of subtitleSegments){
+   const from=Number(segment.from),rule=autoMemeRules.find(r=>r.re.test(segment.text||''));
+   if(!rule||!Number.isFinite(from)||from<0||from>=video.duration||from-last<2.5)continue;
+   if(reactionEffects.some(e=>Math.abs(e.from-from)<1.5))continue;
+   const combo=memeSoundCombos[rule.id];
+   reactionEffects.push({text:combo.text,from,duration:Math.min(1.5,video.duration-from),position:'center',sound:combo.sound,image:builtInMemes[rule.id],imageName:rule.id+' (built-in)',imageSize:.38,autoMeme:true});
+   last=from;count++;if(count>=6)break;
+ }
+ reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();
+ byId('autoMemeStatus').textContent=count+' meme-and-sound moments added automatically. Preview and remove any unsuitable ones.';
+}
+byId('autoMemes').addEventListener('change',()=>{if(byId('autoMemes').checked)autoInsertMemes();});
+
 byId('suggestEffects').addEventListener('click',()=>{
   const root=byId('effectSuggestions');root.replaceChildren();
   if(!loaded||!subtitleSegments.length){byId('effectStatus').textContent='Use Auto Transcribe Speech in Subtitles first.';return;}
@@ -1143,6 +1174,7 @@ byId('suggestEffects').addEventListener('click',()=>{
     row.append(label,approve,dismiss);root.append(row);
     if(count>=8)break;
   }
+  if(byId('autoMemes').checked)autoInsertMemes();
   byId('effectStatus').textContent=count?count+' suggested moments. Review each before approving.':'No matching dialogue found; add effects manually.';
 });
 
