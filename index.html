@@ -282,14 +282,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <p id="captionStatus" role="status">Caption generation uses the cloud backend. The original caption is editable.</p>
 </fieldset>
 <fieldset id="effects" disabled>
-<legend><span>06</span> Reaction moments — manual beta</legend>
-<p>Add an original text reaction overlay to an exact moment. It appears in Preview and Export. AI suggestions and licensed sound effects are planned for a later phase.</p>
+<legend><span>06</span> Reaction moments and sound effects</legend>
+<p>Use original synthesized sound effects and transcript-based suggestions. Approve each suggestion before export.</p><button type="button" id="suggestEffects">Suggest effects from subtitles</button><p id="effectStatus" role="status">Transcribe speech first.</p><div id="effectSuggestions"></div>
 <label>Reaction text<input id="effectText" type="text" maxlength="55" placeholder="WAIT... WHAT?!"></label>
 <div class="times">
 <label>Start (source seconds)<input id="effectStart" type="number" min="0" step=".01" value="0"></label><button type="button" id="effectUsePlayhead">Use playhead</button>
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
-<label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <div id="effectRows" aria-live="polite"></div>
 </fieldset>
@@ -401,6 +401,7 @@ function loadSource(url, name, local) {
   renderSubtitleRows();
   reactionEffects.length = 0;
   renderReactionEffects();
+  byId("effectSuggestions").replaceChildren();
   byId('subtitleOverlay').hidden = true;
   byId('subtitleStatus').textContent = 'No subtitles yet. Tap Auto Transcribe Speech before exporting.';
   byId('captionOutput').value = '';
@@ -951,7 +952,7 @@ function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
 function drawReactionEffect(time) {
   const item=reactionEffects.find(e=>time>=e.from && time<e.from+e.duration);
   if(!item)return;
-  const text=item.text.trim().slice(0,55);
+  const text=(item.text||'').trim().slice(0,55);
   if(!text)return;
   const size=Math.max(18,Math.round(Math.min(canvas.width,canvas.height)*.055));
   ctx.save();
@@ -981,13 +982,53 @@ byId('effectUsePlayhead').addEventListener('click',()=>{byId('effectStart').valu
 byId('addEffect').addEventListener('click',()=>{
   const text=byId('effectText').value.trim();
   const from=Number(byId('effectStart').value),duration=Number(byId('effectDuration').value);
-  if(!loaded||!text||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
+  if(!loaded||(!text&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
     say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
   }
-  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value});
+  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value});
   reactionEffects.sort((a,b)=>a.from-b.from);
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
 });
+
+let effectSoundNodes=[];
+function playEffectSound(kind){
+  const pitches={boom:110,scratch:850,reveal:440};
+  if(!Object.prototype.hasOwnProperty.call(pitches,kind)||!graph)return;
+  const audio=graph.audio,osc=audio.createOscillator(),gain=audio.createGain(),start=audio.currentTime+.01;
+  osc.type=kind==='boom'?'sine':kind==='scratch'?'sawtooth':'triangle';
+  osc.frequency.setValueAtTime(pitches[kind],start);
+  osc.frequency.exponentialRampToValueAtTime(kind==='reveal'?880:40,start+.35);
+  gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(.13,start+.015);
+  gain.gain.exponentialRampToValueAtTime(.0001,start+.36);
+  osc.connect(gain);gain.connect(graph.output);gain.connect(graph.monitor);
+  effectSoundNodes.push({osc,gain});
+  osc.onended=()=>{osc.disconnect();gain.disconnect();effectSoundNodes=effectSoundNodes.filter(n=>n.osc!==osc);};
+  osc.start(start);osc.stop(start+.38);
+}
+byId('suggestEffects').addEventListener('click',()=>{
+  const root=byId('effectSuggestions');root.replaceChildren();
+  if(!loaded||!subtitleSegments.length){byId('effectStatus').textContent='Use Auto Transcribe Speech in Subtitles first.';return;}
+  const patterns=[
+    {re:/\\b(wait|what|really|seriously)\\b/i,text:'WAIT... WHAT?!',sound:'boom'},
+    {re:/\\b(stop|leave|enough|shout)\\b/i,text:'HOLD UP!',sound:'scratch'},
+    {re:/\\b(finally|revealed|surprise|truth)\\b/i,text:'THE REVEAL',sound:'reveal'}
+  ];
+  let count=0,last=-10;
+  for(const segment of subtitleSegments){
+    const from=Number(segment.from),hit=patterns.find(p=>p.re.test(segment.text||''));
+    if(!hit||!Number.isFinite(from)||from<0||from>=video.duration||from-last<1.5)continue;
+    last=from;count++;
+    const row=document.createElement('div');row.className='subtitle-row';
+    const label=document.createElement('span');label.textContent=from.toFixed(1)+'s · '+hit.text+' · '+hit.sound;
+    const approve=document.createElement('button');approve.type='button';approve.textContent='Approve';
+    approve.onclick=()=>{reactionEffects.push({text:hit.text,from,duration:1.5,position:'center',sound:hit.sound});reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();row.remove();};
+    const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='Dismiss';dismiss.onclick=()=>row.remove();
+    row.append(label,approve,dismiss);root.append(row);
+    if(count>=8)break;
+  }
+  byId('effectStatus').textContent=count?count+' suggested moments. Review each before approving.':'No matching dialogue found; add effects manually.';
+});
+
 function seekTo(time, signal) {
   signal.throwIfAborted();
   if (Math.abs(video.currentTime - time) < .002 && !video.seeking && video.readyState >= 2) {
@@ -1020,6 +1061,7 @@ function setAudio(time) {
 function playSegment(segment, onTick, signal) {
   return new Promise((resolve, reject) => {
     let interval;
+    const playedEffects=new Set();
     function finish(error) {
       clearInterval(interval);
       video.pause();
@@ -1034,6 +1076,7 @@ function playSegment(segment, onTick, signal) {
       const time = video.currentTime;
       if (video.ended || time >= segment.to) return finish();
       setAudio(time);
+      reactionEffects.forEach((item,index)=>{if(item.sound&&item.sound!=='none'&&!playedEffects.has(index)&&time>=item.from&&time<item.from+.15){playedEffects.add(index);playEffectSound(item.sound);}});
       if (video.readyState >= 2) {
         const transitionLength = Math.min(transitionSeconds(), (segment.to-segment.from)*.45);
         const transitionProgress = segment.teaser && transitionLength > 0
