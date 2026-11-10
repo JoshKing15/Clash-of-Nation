@@ -204,18 +204,30 @@ async def generate_caption(request: CaptionRequest):
              "x": "Each caption under 240 characters including hashtags.",
              "youtube shorts": "A short title-style opening followed by one line and 3-5 hashtags."}
     prompt = (
-        "Produce exactly THREE distinct original captions for Clash of Nations on " + request.platform[:30] + ". "
-        "Styles in this order: punchy, curiosity, neutral. "
-        "Return ONLY valid JSON: {\"variants\":[{\"style\":\"punchy\",\"text\":\"...\"},"
-        "{\"style\":\"curiosity\",\"text\":\"...\"},"
-        "{\"style\":\"neutral\",\"text\":\"...\"}]}. "
-        "Use the original caption as reference, never copy it verbatim. "
-        "Do not invent facts, identities, locations, quotes, motives or outcomes. "
-        "Use attribution only if supplied, as 'Source: creator' where appropriate. "
-        "Avoid inflammatory framing and represent disputed claims as allegations. "
+        "You are writing captions for CLASH OF NATIONS, a real-world viral video, "
+        "public events and debate page. THIS IS NOT A VIDEO GAME. "
+        "The page name is a brand only and must NEVER be interpreted as the subject. "
+        "Produce exactly THREE distinct captions for " + request.platform[:30] + ". "
+        "Styles: punchy (attention-grabbing but factual), curiosity (an accurate question), "
+        "neutral (plain-language factual summary). "
+        "Return ONLY JSON: {\\\"variants\\\":[{\\\"style\\\":\\\"punchy\\\",\\\"text\\\":\\\"...\\\"},"
+        "{\\\"style\\\":\\\"curiosity\\\",\\\"text\\\":\\\"...\\\"},"
+        "{\\\"style\\\":\\\"neutral\\\",\\\"text\\\":\\\"...\\\"}]}. "
+        "Every caption MUST describe the actual subject of the ORIGINAL SOURCE CAPTION "
+        "and VIDEO CONTEXT, not the page name, and mention concrete people/events/topics "
+        "from the supplied material where known. "
+        "If a source post makes a disputed claim, attribute it to the speaker/post, "
+        "not as verified fact. Do not invent details or endorse prejudice. "
+        "Never write about gaming, battles, empires, strategy, multiplayer, or fictional "
+        "Clash of Nations gameplay unless those are EXPLICITLY the topic of the source post. "
+        "If source and context conflict, prioritize concrete events described in the source "
+        "and avoid unsupported additions. No invented quotes, names, dates or outcomes. "
+        "Do not copy the original caption verbatim. "
+        "Only credit the creator when supplied. "
         + rules.get(request.platform.lower(), rules["facebook"]) +
-        "\nOriginal caption: " + source + "\nVideo context: " + context +
-        "\nOriginal creator: " + request.credit.strip()[:120]
+        "\\nSOURCE POST (subject matter): " + source +
+        "\\nVIDEO DESCRIPTION (optional supporting context): " + context +
+        "\\nCREATOR CREDIT (not a topic): " + request.credit.strip()[:120]
     )
     try:
         async with httpx.AsyncClient(timeout=40) as client:
