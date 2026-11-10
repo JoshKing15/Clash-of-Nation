@@ -76,10 +76,18 @@ def download(raw: str, folder: str):
     # Normalize to MP4 for iOS Safari.
     target = pathlib.Path(folder) / "output.mp4"
     import subprocess
-    subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(chosen),
-                    "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264",
-                    "-preset", "ultrafast", "-crf", "28", "-c:a", "aac",
-                    "-movflags", "+faststart", str(target)], timeout=100, check=True)
+    command = ["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-y", "-i", str(chosen),
+               "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264",
+               "-preset", "ultrafast", "-crf", "28", "-pix_fmt", "yuv420p",
+               "-c:a", "aac", "-movflags", "+faststart", str(target)]
+    try:
+        result = subprocess.run(command, timeout=100, capture_output=True, text=True)
+    except subprocess.TimeoutExpired:
+        raise ValueError("Video conversion timed out. Try a shorter or smaller video.")
+    if result.returncode:
+        details = (result.stderr or "").strip().splitlines()
+        reason = details[-1] if details else "FFmpeg could not convert this video"
+        raise ValueError("Video conversion failed: " + reason[:220])
     if not target.exists() or not target.stat().st_size or target.stat().st_size > MAX_BYTES:
         raise ValueError("Video conversion failed or exceeded size limit")
     return str(target)
