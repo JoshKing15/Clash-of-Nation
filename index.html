@@ -290,7 +290,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
 <label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
-<label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<details><summary>Browse 12 Pixabay meme-style reaction graphics</summary><p>Open a source, download the image from Pixabay, then import it below. Suggested sound pairings are provided.</p><div id="pixabayMemeCatalog"></div></details><label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
 </fieldset>
@@ -1013,6 +1013,26 @@ byId('addEffect').addEventListener('click',()=>{
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
 });
 
+
+
+(async function loadPixabayMemes(){
+  const root=byId('pixabayMemeCatalog');
+  try{
+    const response=await fetch('assets/memes/pixabay-reaction-catalog.json');
+    if(!response.ok)throw Error('unavailable');
+    const data=await response.json();
+    for(const item of data.items||[]){
+      const row=document.createElement('p'),link=document.createElement('a');
+      link.href=item.source_url;link.target='_blank';link.rel='noopener noreferrer';
+      link.textContent=item.title;
+      const suggestion=document.createElement('span');
+      suggestion.textContent=' — suggested sound: '+item.suggested_sound+' · ';
+      const select=document.createElement('button');select.type='button';select.textContent='Use sound';
+      select.addEventListener('click',()=>{byId('effectSound').value=item.suggested_sound;byId('effectImageStatus').textContent='Sound selected. Download '+item.title+' from Pixabay and import it below.';});
+      row.append(link,suggestion,select);root.append(row);
+    }
+  }catch{root.textContent='Reaction catalogue unavailable offline.';}
+})();
 
 byId('effectImageFile').addEventListener('change',async event=>{
   const file=event.target.files?.[0];if(!file)return;
