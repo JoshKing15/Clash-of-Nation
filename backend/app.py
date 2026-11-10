@@ -73,9 +73,46 @@ def download(raw: str, folder: str):
     chosen = max(candidates, key=lambda p: p.stat().st_size)
     if chosen.stat().st_size > MAX_BYTES:
         raise ValueError("Video exceeds the 80 MB limit")
-    # Normalize to MP4 for iOS Safari.
+    # Fast path: X and many other platforms already provide H.264/AAC MP4.
+    # Re-encoding every frame on a small Render instance causes timeouts.
     target = pathlib.Path(folder) / "output.mp4"
     import subprocess
+    import json
+    try:
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "stream=codec_name,codec_type,pix_fmt",
+             "-of", "json", str(chosen)],
+            capture_output=True, text=True, timeout=12, check=True)
+        streams = json.loads(probe.stdout).get("streams", [])
+    except (subprocess.SubprocessError, ValueError, json.JSONDecodeError):
+        streams = []
+    video_stream = next((stream for stream in streams if stream.get("codec_type") == "video"), {})
+    audio_streams = [stream for stream in streams if stream.get("codec_type") == "audio"]
+    compatible = (
+        chosen.suffix.lower() == ".mp4"
+        and video_stream.get("codec_name") == "h264"
+        and video_stream.get("pix_fmt") in ("yuv420p", "yuvj420p")
+        and all(stream.get("codec_name") == "aac" for stream in audio_streams)
+    )
+    if compatible:
+        # Source is already iPhone-friendly; no FFmpeg conversion required.
+        return str(chosen)
+    # Try remuxing compatible codecs before the expensive full re-encode.
+    can_copy = (
+        video_stream.get("codec_name") == "h264"
+        and all(stream.get("codec_name") == "aac" for stream in audio_streams)
+    )
+    if can_copy:
+        try:
+            remux = subprocess.run(
+                ["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(chosen),
+                 "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy",
+                 "-movflags", "+faststart", str(target)],
+                capture_output=True, text=True, timeout=25)
+            if remux.returncode == 0 and target.exists() and 0 < target.stat().st_size <= MAX_BYTES:
+                return str(target)
+        except subprocess.TimeoutExpired:
+            pass
     command = ["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-y", "-i", str(chosen),
                "-map", "0:v:0", "-map", "0:a:0?", "-c:v", "libx264",
                "-preset", "ultrafast", "-crf", "28", "-pix_fmt", "yuv420p",
@@ -83,7 +120,7 @@ def download(raw: str, folder: str):
     try:
         result = subprocess.run(command, timeout=100, capture_output=True, text=True)
     except subprocess.TimeoutExpired:
-        raise ValueError("Video conversion timed out. Try a shorter or smaller video.")
+        raise ValueError("Video needs re-encoding and exceeded the server processing limit. Try a smaller clip.")
     if result.returncode:
         details = (result.stderr or "").strip().splitlines()
         reason = details[-1] if details else "FFmpeg could not convert this video"
