@@ -1513,6 +1513,7 @@ byId('transcribeSubtitles').addEventListener('click',async()=>{
         subtitleSegments.push({from:item.from,to:item.to,text:String(item.text||'')});
     }
     renderSubtitleRows();updateSubtitleOverlay();
+    if(byId('autoMemes').checked)autoInsertMemes();
     byId('subtitleStatus').textContent=subtitleSegments.length
       ? subtitleSegments.length+' subtitle segments ready. Review the text and timing before exporting.'
       : 'No speech detected. Add subtitles manually or disable subtitles before export.';
