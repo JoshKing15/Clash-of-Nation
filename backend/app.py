@@ -210,9 +210,9 @@ async def generate_caption(request: CaptionRequest):
         "Produce exactly THREE distinct captions for " + request.platform[:30] + ". "
         "Styles: punchy (attention-grabbing but factual), curiosity (an accurate question), "
         "neutral (plain-language factual summary). "
-        "Return ONLY JSON: {\\\"variants\\\":[{\\\"style\\\":\\\"punchy\\\",\\\"text\\\":\\\"...\\\"},"
-        "{\\\"style\\\":\\\"curiosity\\\",\\\"text\\\":\\\"...\\\"},"
-        "{\\\"style\\\":\\\"neutral\\\",\\\"text\\\":\\\"...\\\"}]}. "
+        "Return ONLY JSON: {\"variants\":[{\"style\":\"punchy\",\"text\":\"...\"},"
+        "{\"style\":\"curiosity\",\"text\":\"...\"},"
+        "{\"style\":\"neutral\",\"text\":\"...\"}]}. "
         "Every caption MUST describe the actual subject of the ORIGINAL SOURCE CAPTION "
         "and VIDEO CONTEXT, not the page name, and mention concrete people/events/topics "
         "from the supplied material where known. "
@@ -225,9 +225,9 @@ async def generate_caption(request: CaptionRequest):
         "Do not copy the original caption verbatim. "
         "Only credit the creator when supplied. "
         + rules.get(request.platform.lower(), rules["facebook"]) +
-        "\\nSOURCE POST (subject matter): " + source +
-        "\\nVIDEO DESCRIPTION (optional supporting context): " + context +
-        "\\nCREATOR CREDIT (not a topic): " + request.credit.strip()[:120]
+        "\nSOURCE POST (subject matter): " + source +
+        "\nVIDEO DESCRIPTION (optional supporting context): " + context +
+        "\nCREATOR CREDIT (not a topic): " + request.credit.strip()[:120]
     )
     try:
         async with httpx.AsyncClient(timeout=40) as client:
