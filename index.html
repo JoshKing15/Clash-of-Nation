@@ -155,7 +155,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .scroll-thumb{position:absolute;top:0;left:0;right:0;height:35%;border-radius:8px;background:#8b96a8;min-height:26px;touch-action:none}
 }
 @media(min-width:761px){.scroll-rail{display:none}}
-</style>
+.crop-tool{margin:0 0 14px;padding:10px;border:1px solid var(--edge);border-radius:9px}.crop-tool label:not(.check){display:grid;gap:6px;margin:10px 0}.crop-tool input[type=range]{width:100%}#cropControls p{font-size:13px;color:var(--muted)}.screen video.crop-active{object-fit:fill!important;transform-origin:center center}</style>
 
 </head>
 <body>
@@ -226,6 +226,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <ul id="ranges"></ul>
 </fieldset>
 <fieldset id="brandPanel" disabled>
+<div class="crop-tool">
+<label class="check"><input type="checkbox" id="cropEnabled"> Zoom / crop video (optional)</label>
+<div id="cropControls" hidden>
+<p>Zoom in to cut news tickers, banners or unwanted edges out of the picture. Adjust the position to keep the important action visible. The crop is applied to the entire exported clip.</p>
+<label>Zoom <output id="cropZoomLabel">1.00×</output><input id="cropZoom" type="range" min="100" max="300" step="5" value="100"></label>
+<label>Move left / right <input id="cropX" type="range" min="0" max="100" value="50"></label>
+<label>Move up / down <input id="cropY" type="range" min="0" max="100" value="50"></label>
+<button type="button" id="cropReset">Reset crop</button>
+<p id="cropHint">Live source preview updates as you adjust. Preview cut or Export applies the same crop.</p>
+</div>
+</div>
 <legend><span>03</span> Watermarks</legend>
 <label class="check"><input type="checkbox" id="brand" checked> Add the Clash of Nations logo</label>
 <label class="check"><input type="checkbox" id="mask"> Cover an existing watermark</label>
@@ -382,6 +393,12 @@ function loadSource(url, name, local) {
   byId('copyCaption').disabled = true;
   byId('hook').checked = false;
   byId('hookTimes').hidden = true;
+  byId('cropEnabled').checked = false;
+  byId('cropZoom').value = 100;
+  byId('cropX').value = 50;
+  byId('cropY').value = 50;
+  byId('cropControls').hidden = true;
+  applyCropPreview();
   byId('mask').checked = false;
   byId('maskOverlay').hidden = true;
   byId('maskControls').hidden = true;
@@ -804,8 +821,53 @@ byId('add').addEventListener('click', () => {
   }
 });
 
+function cropSettings() {
+  return {
+    enabled: byId('cropEnabled').checked,
+    zoom: Number(byId('cropZoom').value) / 100,
+    x: Number(byId('cropX').value) / 100,
+    y: Number(byId('cropY').value) / 100
+  };
+}
+function cropSourceRect(settings, width, height) {
+  const w=width/settings.zoom, h=height/settings.zoom;
+  return {sx:(width-w)*settings.x,sy:(height-h)*settings.y,sw:w,sh:h};
+}
+function applyCropPreview() {
+  const settings=cropSettings();
+  byId('cropControls').hidden=!settings.enabled;
+  byId('cropZoomLabel').textContent=settings.zoom.toFixed(2)+'×';
+  video.classList.toggle('crop-active',settings.enabled);
+  if(!settings.enabled){video.style.transform='';video.style.objectFit='contain';return;}
+  // CSS object-fit cover establishes the same framing as the canvas export.
+  video.style.objectFit='cover';
+  const w=video.videoWidth||1,h=video.videoHeight||1;
+  const box=byId('video').getBoundingClientRect();
+  const scale=Math.max(box.width/w,box.height/h);
+  const coverW=w*scale,coverH=h*scale;
+  const visibleW=box.width/scale,visibleH=box.height/scale;
+  const rect=cropSourceRect(settings,w,h);
+  // Match canvas crop by applying a normalized translation and scale to the covered video.
+  const factor=settings.zoom;
+  const offsetX=(0.5-settings.x)*(factor-1)*100/factor;
+  const offsetY=(0.5-settings.y)*(factor-1)*100/factor;
+  video.style.transform='translate('+offsetX+'%,'+offsetY+'%) scale('+factor+')';
+}
+for(const id of ['cropEnabled','cropZoom','cropX','cropY']){
+  byId(id).addEventListener('input',()=>{applyCropPreview();clearDownload();});
+}
+byId('cropReset').addEventListener('click',()=>{
+  byId('cropZoom').value=100;byId('cropX').value=50;byId('cropY').value=50;
+  applyCropPreview();clearDownload();
+});
 function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const crop=watermarkSettings.crop;
+  if(crop?.enabled) {
+    const rect=cropSourceRect(crop,video.videoWidth,video.videoHeight);
+    ctx.drawImage(video,rect.sx,rect.sy,rect.sw,rect.sh,0,0,canvas.width,canvas.height);
+  } else {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  }
   const {brand, mask} = watermarkSettings;
   if (mask) {
     const width = Math.round(canvas.width * mask.width);
@@ -999,6 +1061,7 @@ async function run(exporting) {
     const percent = id => valueOf(id) / 100;
     watermarkSettings = {
       brand: byId('brand').checked,
+      crop: cropSettings(),
       mask: byId('mask').checked ? {
         x: percent('maskX'), y: percent('maskY'), width: percent('maskW'), height: percent('maskH'),
         pixelate: byId('maskMode').value === 'pixelate'
