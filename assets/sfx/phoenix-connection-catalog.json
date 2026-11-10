@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "creator": "Phoenix_Connection_Brazil",
+  "creator_url": "https://pixabay.com/users/phoenix_connection_brazil-6017471/",
+  "licence_url": "https://pixabay.com/service/license-summary/",
+  "status": "metadata_only_no_audio_files",
+  "notes": "Links and titles verified from individual public item pages. Audio files are not redistributed. Entries cannot be used for automatic audio mixing until rights and access are resolved.",
+  "items": [
+    {
+      "id": "phoenix-1",
+      "title": "Rapid Wind Sound Effect 1",
+      "source_url": "https://pixabay.com/sound-effects/film-special-effects-rapid-wind-sound-effect-1-108398/",
+      "category": "transition",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    },
+    {
+      "id": "phoenix-2",
+      "title": "Train stopping",
+      "source_url": "https://pixabay.com/sound-effects/train-stopping-99270/",
+      "category": "transport",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    },
+    {
+      "id": "phoenix-3",
+      "title": "Steam train crash",
+      "source_url": "https://pixabay.com/sound-effects/city-steam-train-crash-99260/",
+      "category": "transport",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    },
+    {
+      "id": "phoenix-4",
+      "title": "Train pulling into station",
+      "source_url": "https://pixabay.com/sound-effects/train-pulling-into-station-99269/",
+      "category": "transport",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    },
+    {
+      "id": "phoenix-5",
+      "title": "Steam locomotive leaving station",
+      "source_url": "https://pixabay.com/sound-effects/steam-locomotive-leaving-station-99259/",
+      "category": "transport",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    },
+    {
+      "id": "phoenix-6",
+      "title": "Locomotive-steam, wbell and whistle #1",
+      "source_url": "https://pixabay.com/sound-effects/locomotive-steam-wbell-and-whistle-1-99234/",
+      "category": "transport",
+      "creator": "Phoenix_Connection_Brazil",
+      "file": null,
+      "approved_for_bundling": false
+    }
+  ]
+}
