@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "description": "Reaction video clip registry. Sources are linked; no third-party MP4 files are bundled. Set local_file only after rights and actual media upload are verified.",
+  "clips": [
+    {
+      "id": "omg-green-screen",
+      "title": "OMG! — Animated Green-Screen Reaction",
+      "type": "video",
+      "source": "Pixabay",
+      "source_url": "https://pixabay.com/videos/omg-expression-reaction-wow-290483/",
+      "creator": "YRDesigns",
+      "reaction": "shock",
+      "suggested_sound": "boom",
+      "local_file": null,
+      "rights_status": "source-license-review-needed"
+    },
+    {
+      "id": "emoji-reactions-green-screen",
+      "title": "Emoji Reactions — Green-Screen Animation",
+      "type": "video",
+      "source": "Pixabay",
+      "source_url": "https://pixabay.com/videos/emojis-reactions-green-screen-134389/",
+      "creator": "thesumersinghrajput",
+      "reaction": "surprise",
+      "suggested_sound": "reveal",
+      "local_file": null,
+      "rights_status": "source-license-review-needed"
+    },
+    {
+      "id": "man-laughing",
+      "title": "Man Laughing — Playful Reaction",
+      "type": "video",
+      "source": "Pexels",
+      "source_url": "https://www.pexels.com/video/man-laughing-while-being-touched-a-person-s-hands-4834403/",
+      "creator": "Ketut Subiyanto",
+      "reaction": "laugh",
+      "suggested_sound": "reveal",
+      "local_file": null,
+      "rights_status": "source-license-review-needed"
+    },
+    {
+      "id": "friends-laughing",
+      "title": "Friends Laughing — Group Reaction",
+      "type": "video",
+      "source": "Pexels",
+      "source_url": "https://www.pexels.com/video/people-laughing-while-talking-to-each-other-4624652/",
+      "creator": "Ketut Subiyanto",
+      "reaction": "laugh",
+      "suggested_sound": "reveal",
+      "local_file": null,
+      "rights_status": "source-license-review-needed"
+    },
+    {
+      "id": "man-glasses-laughing",
+      "title": "Man in Glasses Laughing — Reaction",
+      "type": "video",
+      "source": "Pexels",
+      "source_url": "https://www.pexels.com/video/a-man-with-glasses-and-a-black-shirt-is-laughing-20218493/",
+      "reaction": "laugh",
+      "suggested_sound": "reveal",
+      "local_file": null,
+      "rights_status": "source-license-review-needed"
+    }
+  ],
+  "famous_meme_references": [
+    {
+      "title": "The Rock Eyebrow Raise",
+      "reaction": "suspicious",
+      "suggested_sound": "boom",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    },
+    {
+      "title": "Surprised Pikachu",
+      "reaction": "shock",
+      "suggested_sound": "boom",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    },
+    {
+      "title": "Confused Nick Young",
+      "reaction": "confusion",
+      "suggested_sound": "scratch",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    },
+    {
+      "title": "Side Eye Chloe",
+      "reaction": "suspicious",
+      "suggested_sound": "scratch",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    },
+    {
+      "title": "El Risitas — Spanish Laughing Guy",
+      "reaction": "laugh",
+      "suggested_sound": "reveal",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    },
+    {
+      "title": "Crying Cat",
+      "reaction": "sad",
+      "suggested_sound": "scratch",
+      "local_file": null,
+      "rights_status": "not-cleared"
+    }
+  ]
+}
