@@ -289,6 +289,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Start (source seconds)<input id="effectStart" type="number" min="0" step=".01" value="0"></label><button type="button" id="effectUsePlayhead">Use playhead</button>
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
+<label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
 <label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <div id="effectRows" aria-live="polite"></div>
@@ -953,6 +954,13 @@ function drawReactionEffect(time) {
   const item=reactionEffects.find(e=>time>=e.from && time<e.from+e.duration);
   if(!item)return;
   const text=(item.text||'').trim().slice(0,55);
+  if(!text&&!item.emoji)return;
+  if(item.emoji){
+    ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font=Math.round(Math.min(canvas.width,canvas.height)*.17)+'px system-ui,Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji';
+    ctx.fillText(item.emoji,canvas.width/2,canvas.height*(item.position==='top'?.28:item.position==='bottom'?.68:.4));
+    ctx.restore();
+  }
   if(!text)return;
   const size=Math.max(18,Math.round(Math.min(canvas.width,canvas.height)*.055));
   ctx.save();
@@ -982,10 +990,10 @@ byId('effectUsePlayhead').addEventListener('click',()=>{byId('effectStart').valu
 byId('addEffect').addEventListener('click',()=>{
   const text=byId('effectText').value.trim();
   const from=Number(byId('effectStart').value),duration=Number(byId('effectDuration').value);
-  if(!loaded||(!text&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
+  if(!loaded||(!text&&!byId('effectEmoji').value&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
     say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
   }
-  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value});
+  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value});
   reactionEffects.sort((a,b)=>a.from-b.from);
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
 });
@@ -1009,9 +1017,9 @@ byId('suggestEffects').addEventListener('click',()=>{
   const root=byId('effectSuggestions');root.replaceChildren();
   if(!loaded||!subtitleSegments.length){byId('effectStatus').textContent='Use Auto Transcribe Speech in Subtitles first.';return;}
   const patterns=[
-    {re:/\b(wait|what|really|seriously)\b/i,text:'WAIT... WHAT?!',sound:'boom'},
-    {re:/\b(stop|leave|enough|shout)\b/i,text:'HOLD UP!',sound:'scratch'},
-    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal'}
+    {re:/\b(wait|what|really|seriously)\b/i,text:'WAIT... WHAT?!',sound:'boom',emoji:'😱'},
+    {re:/\b(stop|leave|enough|shout)\b/i,text:'HOLD UP!',sound:'scratch',emoji:'👀'},
+    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal',emoji:'🤯'}
   ];
   let count=0,last=-10;
   for(const segment of subtitleSegments){
@@ -1021,7 +1029,7 @@ byId('suggestEffects').addEventListener('click',()=>{
     const row=document.createElement('div');row.className='subtitle-row';
     const label=document.createElement('span');label.textContent=from.toFixed(1)+'s · '+hit.text+' · '+hit.sound;
     const approve=document.createElement('button');approve.type='button';approve.textContent='Approve';
-    approve.onclick=()=>{reactionEffects.push({text:hit.text,from,duration:1.5,position:'center',sound:hit.sound});reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();row.remove();};
+    approve.onclick=()=>{reactionEffects.push({text:hit.text,from,duration:1.5,position:'center',sound:hit.sound,emoji:hit.emoji});reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();row.remove();};
     const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='Dismiss';dismiss.onclick=()=>row.remove();
     row.append(label,approve,dismiss);root.append(row);
     if(count>=8)break;
