@@ -21,3 +21,13 @@
 - Add a rights-reviewed, pinned static emoji image set (rather than device-font emoji) and tested audio samples where licensing permits bundling.
 - Add per-clip sensitive-content controls and context-aware AI suggestion endpoint.
 - Test iPhone Safari audio synchronization, emoji export rendering and preview/export parity.
+
+
+## Behaviour notes (code review, Nov 2026)
+
+- Automatic reactions are scored from the transcript: everyday words like "what" or "how" no longer trigger anything; the strongest moments are chosen, at most 6, at least 2.5 s apart.
+- Moments within 8 s of sensitive wording (deaths, shootings, abuse, ...) never receive an automatic comedic reaction. The word list is English-only and deliberately conservative; it does not replace reviewing the preview.
+- GIFs can be imported but only their first frame is used. Short MP4 reaction clips are not supported yet; the clip catalogue lists links only and no media file is bundled.
+- One reaction is on screen at a time. Adding an overlapping one trims the earlier one, so every picture keeps its own sound.
+- Imported pictures are reduced to at most 1024 px to protect phone memory.
+- `tests/test_catalogs_and_assets.py` fails if a catalogue entry points at a missing file, if a third-party media file is bundled, or if reaction names drift from the app's own.
