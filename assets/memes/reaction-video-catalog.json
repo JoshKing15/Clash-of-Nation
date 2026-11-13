@@ -9,7 +9,7 @@
       "source": "Pixabay",
       "source_url": "https://pixabay.com/videos/omg-expression-reaction-wow-290483/",
       "creator": "YRDesigns",
-      "reaction": "shock",
+      "reaction": "shocked",
       "suggested_sound": "boom",
       "local_file": null,
       "rights_status": "source-license-review-needed"
@@ -21,7 +21,7 @@
       "source": "Pixabay",
       "source_url": "https://pixabay.com/videos/emojis-reactions-green-screen-134389/",
       "creator": "thesumersinghrajput",
-      "reaction": "surprise",
+      "reaction": "reveal",
       "suggested_sound": "reveal",
       "local_file": null,
       "rights_status": "source-license-review-needed"
@@ -68,7 +68,7 @@
       "source": "Pexels",
       "source_url": "https://www.pexels.com/video/a-man-with-a-shocked-expression-4587767/",
       "creator": "Ketut Subiyanto",
-      "reaction": "shock",
+      "reaction": "shocked",
       "suggested_sound": "boom",
       "local_file": null,
       "rights_status": "source-license-review-needed"
@@ -92,7 +92,7 @@
       "source": "Pexels",
       "source_url": "https://www.pexels.com/video/close-up-video-of-a-man-looking-at-camera-4954375/",
       "creator": null,
-      "reaction": "shock",
+      "reaction": "shocked",
       "suggested_sound": "boom",
       "local_file": null,
       "rights_status": "source-license-review-needed"
@@ -216,14 +216,14 @@
     },
     {
       "title": "Surprised Pikachu",
-      "reaction": "shock",
+      "reaction": "shocked",
       "suggested_sound": "boom",
       "local_file": null,
       "rights_status": "not-cleared"
     },
     {
       "title": "Confused Nick Young",
-      "reaction": "confusion",
+      "reaction": "confused",
       "suggested_sound": "scratch",
       "local_file": null,
       "rights_status": "not-cleared"
