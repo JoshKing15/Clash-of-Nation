@@ -72,7 +72,7 @@ input,select,textarea,button{font-size:16px}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tool-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-bottom:16px;position:sticky;top:0;z-index:5;background:var(--panel);padding:6px 0 10px;border-bottom:1px solid var(--edge)}
 .tool-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#1d232a;border:1px solid transparent;border-radius:10px;padding:8px 1px;min-width:0;font-size:18px}
-.tool-nav button span{font-size:10px;letter-spacing:-.02em;white-space:nowrap}
+.tool-nav button span{font-size:clamp(8px,2.2vw,10px);letter-spacing:-.04em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .tool-nav button[aria-pressed="true"]{color:#fff;background:#4c2625;border-color:var(--accent)}
 .controls fieldset.tool-hidden{display:none!important}
 .controls .actions{position:sticky;bottom:0;z-index:4;background:var(--panel);padding:12px 0;border-top:1px solid var(--edge);margin-top:12px}
