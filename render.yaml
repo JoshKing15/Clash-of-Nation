@@ -6,6 +6,16 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     envVars:
+      # Comma-separate several origins (e.g. production and staging).
       - key: FRONTEND_ORIGIN
         value: https://clash-of-nation-1.onrender.com
+      # Free instances have 512 MB of RAM: process one video at a time, answer "busy" (503) to the rest.
+      - key: MAX_CONCURRENT_JOBS
+        value: "1"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "20"
+      # Render's proxy appends the real client address to X-Forwarded-For; needed for per-visitor rate limits.
+      - key: TRUST_FORWARDED_FOR
+        value: "1"
+      # Set GROQ_API_KEY in the Render dashboard (never in this file).
     healthCheckPath: /health
