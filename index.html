@@ -70,9 +70,9 @@ h1{font-size:clamp(1.5rem,4vw,2.5rem);margin:16px 0 0}
 button,.upload{min-height:44px;touch-action:manipulation}
 input,select,textarea,button{font-size:16px}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.tool-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:16px;position:sticky;top:0;z-index:5;background:var(--panel);padding:6px 0 10px;border-bottom:1px solid var(--edge)}
-.tool-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#1d232a;border:1px solid transparent;border-radius:10px;padding:8px 3px;min-width:0;font-size:18px}
-.tool-nav button span{font-size:11px;white-space:nowrap}
+.tool-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-bottom:16px;position:sticky;top:0;z-index:5;background:var(--panel);padding:6px 0 10px;border-bottom:1px solid var(--edge)}
+.tool-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:#1d232a;border:1px solid transparent;border-radius:10px;padding:8px 1px;min-width:0;font-size:18px}
+.tool-nav button span{font-size:10px;letter-spacing:-.02em;white-space:nowrap}
 .tool-nav button[aria-pressed="true"]{color:#fff;background:#4c2625;border-color:var(--accent)}
 .controls fieldset.tool-hidden{display:none!important}
 .controls .actions{position:sticky;bottom:0;z-index:4;background:var(--panel);padding:12px 0;border-top:1px solid var(--edge);margin-top:12px}
@@ -102,24 +102,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #importPanel{margin-top:8px}#importPanel>.import-summary{cursor:pointer;list-style:none;min-height:44px;padding:10px 12px;border:1px solid var(--edge);border-radius:10px;background:#1d232a;font-weight:650;display:flex;align-items:center;justify-content:space-between;gap:8px}#importPanel>.import-summary::before{content:"▸";color:var(--accent)}#importPanel[open]>.import-summary::before{content:"▾"}#currentVideoName{font-size:12px;font-weight:400;color:var(--muted);max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#importPanel .import-body{padding:12px 2px 4px}#importPanel .import-body>details{margin-top:12px}#importPanel .import-body>details>summary{cursor:pointer;min-height:44px;padding:10px 0}
 
 .caption-variants{display:grid;gap:10px;margin:12px 0}.caption-option{background:#1d232a;border:1px solid var(--edge);border-radius:12px;padding:12px}.caption-option p{white-space:pre-wrap;color:var(--ink);font-size:14px;margin:8px 0}.caption-option .buttons button{min-height:44px}
-.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}#recentLinksList{max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch} }
-/* ff51e07-style separation: sticky source panel scrolls internally; editing tools follow the page. */
-@media(max-width:760px){
- html,body{height:auto;overflow-y:auto;overflow-x:hidden}
- main,.workspace{height:auto;max-height:none;overflow:visible}
- .workspace{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}
- .workspace>.viewer{
-   position:sticky;top:0;z-index:8;
-   max-height:46dvh;overflow-y:auto;overflow-x:hidden;
-   -webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;
-   touch-action:pan-y;min-height:0;
- }
- .workspace>.viewer .screen{height:min(27dvh,245px);min-height:145px}
- .workspace>.controls{position:relative;overflow:visible;height:auto;max-height:none;min-height:0}
- .workspace>.controls .tool-nav{position:sticky;top:0}
- .workspace>.controls .actions{position:sticky;bottom:env(safe-area-inset-bottom,0px)}
-}
-
+.recent-links{display:grid;gap:7px;margin:9px 0}.recent-link-row{display:flex;gap:7px;align-items:center;min-width:0}.recent-link-use{flex:1;min-width:0;text-align:left;display:grid;gap:2px;padding:9px}.recent-link-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:400;color:var(--muted)}.recent-link-row>button:last-child{flex:0 0 auto}#recentLinksPanel{margin:10px 0}#recentLinksPanel>summary{cursor:pointer}#recentLinksList{max-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* Two independent mobile scroll panes: video/import above, editing tools below. */
 @media(max-width:760px){
  html,body{height:100%;overflow:hidden!important;overscroll-behavior:none}
@@ -155,17 +138,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  .scroll-thumb{position:absolute;top:0;left:0;right:0;height:35%;border-radius:8px;background:#8b96a8;min-height:26px;touch-action:none}
 }
 @media(min-width:761px){.scroll-rail{display:none}}
-.crop-tool{margin:0 0 14px;padding:10px;border:1px solid var(--edge);border-radius:9px}.crop-tool label:not(.check){display:grid;gap:6px;margin:10px 0}.crop-tool input[type=range]{width:100%}#cropControls p{font-size:13px;color:var(--muted)}.screen video.crop-active{object-fit:fill!important;transform-origin:center center}</style>
+.crop-tool{margin:0 0 14px;padding:10px;border:1px solid var(--edge);border-radius:9px}.crop-tool label:not(.check){display:grid;gap:6px;margin:10px 0}.crop-tool input[type=range]{width:100%}#cropControls p{font-size:13px;color:var(--muted)}#videoFrame{grid-area:1/1;width:100%;height:100%;min-width:0;display:grid;place-items:center;overflow:hidden}#empty,#canvas{grid-area:1/1}.screen video.crop-active{transform-origin:center center}#compatBanner{background:#4c2625;color:#fff;padding:12px 14px;border-radius:10px;margin:8px 0;font-size:14px}#assetStatus{color:#ffb4a8;font-size:13px}</style>
 
 </head>
 <body>
 <main>
+<div id="compatBanner" role="alert" hidden>This browser is too old to run the editor reliably. Update to iOS / Safari 15.4 or newer, or use a current Chrome, Edge or Firefox.</div>
 <header><div class="brand"><span class="mark">▶</span> CLASH OF NATIONS</div><span class="badge">LOCAL VIDEO PROCESSING</span></header>
 <h1>Clip editor</h1>
 <p class="intro">Import a clip, trim or censor it, then export it to your phone.</p>
 <div class="workspace">
 <section class="panel viewer" aria-label="Video preview and upload — independently scrollable" tabindex="0">
-<div class="screen"><video id="video" playsinline preload="auto" hidden></video><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Edit your video on your phone.</small></div></div>
+<div class="screen"><div id="videoFrame"><video id="video" playsinline preload="auto" hidden></video></div><canvas id="canvas" hidden></canvas><div id="maskOverlay" hidden aria-label="Drag watermark mask over the source video"></div><div id="subtitleOverlay" hidden></div><div id="empty"><span class="play">▶</span><strong>Load a video to start</strong><small>Edit your video on your phone.</small></div></div>
 <div class="transport">
 <button type="button" id="play" data-edit disabled>Play source</button>
 <input type="range" id="seek" aria-label="Source playhead" min="0" max="0" value="0" step=".01" data-edit disabled>
@@ -283,6 +267,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 </fieldset>
 <fieldset id="effects" disabled>
 <legend><span>06</span> Reaction moments and sound effects</legend>
+<p id="assetStatus" role="status" hidden></p>
 <p>Use original synthesized sound effects and transcript-based suggestions. Approve each suggestion before export.</p><button type="button" id="suggestEffects">Suggest effects from subtitles</button><p id="effectStatus" role="status">Transcribe speech first.</p><div id="effectSuggestions"></div>
 <label>Reaction text<input id="effectText" type="text" maxlength="55" placeholder="WAIT... WHAT?!"></label>
 <div class="times">
@@ -290,7 +275,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label>Duration (seconds)<input id="effectDuration" type="number" min=".2" max="10" step=".1" value="1.5"></label>
 </div>
 <label><input type="checkbox" id="autoMemes"> Automatically insert matching meme + sound after transcription (max 6)</label><p id="autoMemeStatus" role="status">Uses dialogue keywords; review the result before export.</p><label>Meme + sound combo<select id="effectCombo"><option value="">Custom / choose separately</option><option value="suspicious">Suspicious look + boom</option><option value="shocked">Shocked reaction + boom</option><option value="laugh">Laughing reaction + reveal</option><option value="awkward">Awkward side-eye + scratch</option><option value="confused">Confused reaction + scratch</option><option value="reveal">Big reveal + chime</option></select></label><p id="effectComboStatus">Choose a combo to set a matching reaction graphic and sound.</p><label>Reaction graphic<select id="effectEmoji"><option value="">None</option><option value="😱">Shocked 😱</option><option value="🤯">Mind blown 🤯</option><option value="😂">Laughing 😂</option><option value="🤣">Rolling laughing 🤣</option><option value="🤦">Facepalm 🤦</option><option value="🤔">Thinking 🤔</option><option value="😬">Awkward 😬</option><option value="👀">Side eye 👀</option><option value="💀">Deadpan 💀</option><option value="😳">Surprised 😳</option><option value="🙄">Eye roll 🙄</option><option value="👏">Applause 👏</option></select></label>
-<details><summary>Reaction video clips — source library</summary><p>Browse correctly titled video sources. Clips are not bundled or automatically insertable until media rights and files are confirmed.</p><div id="reactionClipCatalog"></div></details><details><summary>Browse 12 Pixabay meme-style reaction graphics</summary><p>Open a source, download the image from Pixabay, then import it below. Suggested sound pairings are provided.</p><div id="pixabayMemeCatalog"></div></details><label>Import meme picture (PNG/JPG/WebP, transparent PNG recommended)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
+<details><summary>Reaction video clips — source library</summary><p>Browse correctly titled video sources. Clips are not bundled or automatically insertable until media rights and files are confirmed.</p><div id="reactionClipCatalog"></div></details><details><summary>Browse 12 Pixabay meme-style reaction graphics</summary><p>Open a source, download the image from Pixabay, then import it below. Suggested sound pairings are provided.</p><div id="pixabayMemeCatalog"></div></details><label>Import meme picture (PNG/JPG/WebP/GIF, transparent PNG recommended; GIFs use their first frame)<input id="effectImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label><p id="effectImageStatus" role="status">Choose a meme picture to overlay alongside its sound.</p><label>Meme picture size <input id="effectImageSize" type="range" min="15" max="80" value="38"></label><label>Import licensed audio (MP3/WAV/M4A)<input id="effectAudioFile" type="file" accept="audio/*"></label><p id="effectAudioStatus" role="status">Local audio only; not uploaded.</p><label>Sound<select id="effectSound"><option value="none">None</option><option value="boom">Dramatic boom</option><option value="scratch">Record scratch</option><option value="reveal">Reveal chime</option><option value="imported" disabled>Imported sound</option></select></label><label>Position<select id="effectPosition"><option value="top">Top</option><option value="center">Center</option><option value="bottom">Bottom</option></select></label>
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
 </fieldset>
@@ -307,6 +292,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 'use strict';
 
 const byId = id => document.getElementById(id);
+
+// Needs Safari/iOS 15.4+ (AbortSignal.throwIfAborted, dvh units, ResizeObserver). Say so instead of failing silently.
+if (!window.AbortSignal || !AbortSignal.prototype.throwIfAborted || !window.ResizeObserver) byId('compatBanner').hidden = false;
 
 /* One tool at a time: keeps all existing IDs and event handlers intact. */
 const toolPanels = {edit:'edit',censor:'censor',brand:'brandPanel',subtitles:'subtitles',captionTools:'captionTools',effects:'effects'};
@@ -346,6 +334,9 @@ let watermarkSettings;
 let originalUrl;
 let fetchingOriginal = false;
 let readingLinkFile = false;
+let importing = false;
+let pendingLink = null; // a link is only remembered once its video has really loaded
+let sourceFile = null;  // the File/Blob behind the loaded video, when it is local
 let detectingProfanity = false;
 let transcribingSubtitles = false;
 const subtitleSegments = [];
@@ -356,7 +347,19 @@ let importedMemeImage=null;
 let importedMemeName="";
 const builtInMemes={};
 const builtInMemePaths=['suspicious','shocked','laugh','awkward','confused','reveal'];
-for(const id of builtInMemePaths){const image=new Image();image.src='assets/memes/original/'+id+'.svg';builtInMemes[id]=image;}
+const failedMemes=new Set();
+function reportAssetHealth(){
+  const note=byId('assetStatus'),ids=[...failedMemes];
+  note.hidden=!ids.length;
+  if(ids.length)note.textContent='These built-in reaction graphics did not load: '+ids.join(', ')+'. Reload the page or check your connection; they are skipped until then.';
+  for(const id of builtInMemePaths){const option=byId('effectCombo').querySelector('[value="'+id+'"]');if(option)option.disabled=failedMemes.has(id);}
+}
+for(const id of builtInMemePaths){
+  const image=new Image();
+  image.addEventListener('error',()=>{failedMemes.add(id);reportAssetHealth();});
+  image.addEventListener('load',()=>{if(!image.naturalWidth){failedMemes.add(id);reportAssetHealth();}});
+  image.src='assets/memes/original/'+id+'.svg';builtInMemes[id]=image;
+}
 const transitionSeconds = () => Number(byId("transitionDuration").value);
 byId("transitionDuration").addEventListener("input", () => {
   byId("transitionDurationLabel").textContent = transitionSeconds().toFixed(1) + " seconds";
@@ -369,12 +372,84 @@ const say = message => { status.textContent = message; };
 const seconds = value => value.toFixed(2);
 const valueOf = id => byId(id).valueAsNumber;
 
+const DEFAULT_API = 'https://clash-of-nation.onrender.com';
+let API_TIMEOUT_MS = 90000; // a sleeping Render instance can need ~50 s to wake up
+const MAX_UPLOAD_BYTES = 80 * 1024 * 1024;
+const SOCIAL_HOST_RE = /(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com|instagram\.com)$/i;
+const SOUND_WINDOW = .35;               // seconds after a reaction starts in which its sound may still fire (timers can lag on phones)
+const DRAW_INTERVAL_MS = 1000 / 32;     // the recorder captures 30 fps; drawing faster only burns battery
+const EXPORT_MEMORY_BUDGET = 140e6;     // the whole recording sits in memory until it is saved
+
+function safeHref(value) {
+  try { const u = new URL(String(value || '')); return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : ''; }
+  catch { return ''; }
+}
+
+function apiEndpoint(path) {
+  const base = byId('apiUrl').value.trim() || DEFAULT_API;
+  let url;
+  try { url = new URL(path, base); } catch { throw new Error('The downloader API URL is not valid.'); }
+  const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  if (url.protocol !== 'https:' && !(local && url.protocol === 'http:')) throw new Error('The backend URL must use HTTPS.');
+  return url;
+}
+async function apiFetch(path, options = {}, timeoutMs = API_TIMEOUT_MS) {
+  const url = apiEndpoint(path);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {...options, signal: controller.signal});
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('The server is taking too long to respond (it may be waking up). Please try again in a minute.');
+    throw new Error('Could not reach the server. Check your connection and the API URL, then try again.');
+  } finally { clearTimeout(timer); }
+}
+function apiErrorMessage(response, data) {
+  if (data && typeof data.detail === 'string' && data.detail) return data.detail;
+  if (response.status === 429) return 'Too many requests. Please wait a minute and try again.';
+  if (response.status >= 500) return 'The server is temporarily unavailable. Please try again in a minute.';
+  return 'The request failed (' + response.status + '). Please try again.';
+}
+async function apiJson(path, options, timeoutMs) {
+  const response = await apiFetch(path, options, timeoutMs);
+  let data = null;
+  try { data = JSON.parse(await response.text()); } catch { /* not JSON, e.g. a proxy error page */ }
+  if (!response.ok) throw new Error(apiErrorMessage(response, data));
+  if (data === null || typeof data !== 'object') throw new Error('The server returned an unexpected response. Please try again.');
+  return data;
+}
+// Local files are uploaded as the File object itself. Only remote links need a fetch, and never a second copy of a local video.
+async function sourceBlobForUpload() {
+  if (sourceFile) return sourceFile;
+  const response = await fetch(video.src);
+  if (!response.ok) throw new Error('Could not read the selected video.');
+  if (Number(response.headers.get('content-length')) > MAX_UPLOAD_BYTES) throw uploadTooLarge();
+  return response.blob();
+}
+const uploadTooLarge = () => new Error('This video is larger than 80 MB, the limit for cloud analysis. Trim or compress it first.');
+function checkUploadSize(blob) { if (blob.size > MAX_UPLOAD_BYTES) throw uploadTooLarge(); }
+
+function planExport(seconds, width, height) {
+  const audio = 128000;
+  let bitsPerSecond = Math.min(6500000, Math.max(2000000, Math.round(width * height * 30 * .1)));
+  let estimatedBytes = (bitsPerSecond + audio) * seconds / 8;
+  if (estimatedBytes > EXPORT_MEMORY_BUDGET) {
+    bitsPerSecond = Math.floor(EXPORT_MEMORY_BUDGET * 8 / seconds) - audio;
+    estimatedBytes = (bitsPerSecond + audio) * seconds / 8;
+  }
+  if (bitsPerSecond < 1200000) {
+    return {ok: false, bitsPerSecond, estimatedBytes,
+      message: 'This edit is too long to export on a phone without running out of memory. Choose a shorter clip (about 10 minutes or less).'};
+  }
+  return {ok: true, bitsPerSecond, estimatedBytes, message: ''};
+}
+
 function setControls() {
   for (const control of editControls) control.disabled = !loaded || !!running;
   byId('file').disabled = !!running;
-  byId('videoUrl').disabled = !!running || fetchingOriginal;
+  byId('videoUrl').disabled = !!running || fetchingOriginal || importing;
   byId('linkFile').disabled = !!running || fetchingOriginal || readingLinkFile;
-  byId('importButton').disabled = !!running || fetchingOriginal || readingLinkFile;
+  byId('importButton').disabled = !!running || fetchingOriginal || readingLinkFile || importing;
   byId('fetchOriginal').disabled = !!running || fetchingOriginal || readingLinkFile;
   byId('stop').hidden = !running;
   if (running) byId('maskOverlay').hidden = true;
@@ -397,7 +472,7 @@ function clearDownload() {
   download.removeAttribute('href');
 }
 
-function loadSource(url, name, local) {
+function loadSource(url, name, local, blob) {
   video.pause();
   loaded = false;
   setControls();
@@ -433,6 +508,8 @@ function loadSource(url, name, local) {
   byId('maskOverlay').hidden = true;
   byId('maskControls').hidden = true;
   if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+  sourceFile = blob || null;
+  pendingLink = null;
   sourceUrl = local ? url : undefined;
   if (local) video.removeAttribute('crossorigin');
   else video.crossOrigin = 'anonymous';
@@ -448,7 +525,7 @@ function loadSource(url, name, local) {
 byId('file').addEventListener('change', event => {
   const file = event.target.files[0];
   if (!file || running) return;
-  loadSource(URL.createObjectURL(file), file.name, true);
+  loadSource(URL.createObjectURL(file), file.name, true, file);
   event.target.value = '';
 });
 
@@ -472,10 +549,6 @@ function directVideoUrl(value) {
   }
   if (url.protocol !== 'https:' || url.username || url.password) {
     throw new Error('Enter a direct HTTPS video link without login details.');
-  }
-  if (/(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/i.test(url.hostname)
-      && !/\.(mp4|mov|webm)$/i.test(url.pathname)) {
-    if (!byId('apiUrl').value.trim()) throw new Error('For social posts, enter your deployed downloader API URL below the link.');
   }
   return url;
 }
@@ -551,36 +624,40 @@ byId('linkFile').addEventListener('change', async event => {
 });
 
 async function fetchSocialVideo(url) {
-  const api = byId('apiUrl').value.trim();
-  if (!api) throw new Error('Enter the downloader API URL first.');
-  const endpoint = new URL('/api/download', api);
-  if (endpoint.protocol !== 'https:' && endpoint.hostname !== 'localhost') throw new Error('Downloader API must use HTTPS.');
-  const response = await fetch(endpoint, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url.href})});
-  if (!response.ok) { let message = 'Downloader failed (' + response.status + ')'; try {const data=await response.json();message=data.detail||message;}catch{} throw new Error(message); }
+  const response = await apiFetch('/api/download', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url.href})}, 150000);
+  if (!response.ok) { let data = null; try { data = await response.json(); } catch {} throw new Error(apiErrorMessage(response, data)); }
   const blob = await response.blob();
   if (!blob.size || blob.type.startsWith('text/')) throw new Error('Downloader returned no video.');
   return blob;
 }
-function isSocialPost(url) { return /(^|\.)(facebook\.com|fb\.watch|twitter\.com|x\.com|youtube\.com|youtu\.be|tiktok\.com)$/i.test(url.hostname) && !/\.(mp4|mov|webm)$/i.test(url.pathname); }
+function isSocialPost(url) { return SOCIAL_HOST_RE.test(url.hostname) && !/\.(mp4|mov|webm)$/i.test(url.pathname); }
 byId('importLink').addEventListener('submit', async event => {
   event.preventDefault();
-  if (running || fetchingOriginal || readingLinkFile) return;
+  if (importing || running || fetchingOriginal || readingLinkFile) return;
+  let url;
+  try { url = directVideoUrl(videoLink.value); } catch (error) { linkStatus(error.message); return; }
+  importing = true;
+  setControls();
   try {
-    const url = directVideoUrl(videoLink.value);
     if (isSocialPost(url)) {
       linkStatus('Downloading social video through your API…');
       const blob = await fetchSocialVideo(url);
-      loadSource(URL.createObjectURL(blob), 'social-video.mp4', true);
-      await fetchSourceCaption(url.href);
+      loadSource(URL.createObjectURL(blob), 'social-video.mp4', true, blob);
+      pendingLink = url.href;
+      linkStatus('Video downloaded. Preparing the editor…');
+      fetchSourceCaption(url.href); // not awaited: the editor must not wait for caption AI
     } else {
       loadSource(url.href, url.hostname, false);
+      pendingLink = url.href;
       byId('sourceCaption').value = '';
       byId('captionStatus').textContent = 'Direct video files have no associated post caption. Use a social post URL to retrieve its caption.';
+      linkStatus('Loading the video…');
     }
-    rememberVideoLink(url.href);
-    linkStatus('Video downloaded. Preparing the editor…');
   } catch (error) {
     linkStatus(error.message);
+  } finally {
+    importing = false;
+    setControls();
   }
 });
 
@@ -667,7 +744,7 @@ byId('maskOverlay').addEventListener('pointerdown', event => {
   overlay.addEventListener('pointerup',done);
   overlay.addEventListener('pointercancel',done);
 });
-window.addEventListener('resize',()=>{updateMaskOverlay();updateSubtitleOverlay();});
+window.addEventListener('resize',()=>{updateMaskOverlay();updateSubtitleOverlay();applyCropPreview();});
 
 share.addEventListener('click', async () => {
   if (!exportFile) return;
@@ -706,14 +783,18 @@ video.addEventListener('loadedmetadata', () => {
   updateClock();
   updateMaskOverlay();
   updateSubtitleOverlay();
-  if (byId('filename').textContent === 'social-video.mp4') {
-    linkStatus('Video downloaded and automatically selected — ready to edit (' + seconds(duration) + ' s).');
+  if (pendingLink) {
+    rememberVideoLink(pendingLink);
+    pendingLink = null;
+    linkStatus('Video ready to edit (' + seconds(duration) + ' s).');
   }
+  applyCropPreview();
   say('Video selected. Find the start of the conflict and select Use playhead.');
 });
 
 video.addEventListener('error', () => {
   loaded = false;
+  pendingLink = null;
   setControls();
   running?.abort();
   if (byId('filename').textContent === 'social-video.mp4') linkStatus('Download completed, but the video could not be loaded in this browser.');
@@ -801,6 +882,17 @@ function renderRanges() {
 }
 
 
+function mergeRanges() {
+  ranges.sort((a, b) => a.from - b.from);
+  const merged = [];
+  for (const range of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && last.mode === range.mode && range.from <= last.to + .05) last.to = Math.max(last.to, range.to);
+    else merged.push({...range});
+  }
+  ranges.splice(0, ranges.length, ...merged);
+}
+
 byId('autoCensor').addEventListener('click', async () => {
   if (!loaded || running || detectingProfanity) return;
   detectingProfanity = true;
@@ -808,29 +900,26 @@ byId('autoCensor').addEventListener('click', async () => {
   const report = byId('aiStatus');
   report.textContent = 'Sending audio for AI transcription…';
   try {
-    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
-    const endpoint = new URL('/api/detect-profanity', api);
-    if (endpoint.protocol !== 'https:') throw new Error('Use a secure HTTPS backend URL.');
-    const response = await fetch(video.src);
-    if (!response.ok) throw new Error('Could not read the selected video.');
-    const blob = await response.blob();
-    if (blob.size > 80*1024*1024) throw new Error('Video exceeds the 80 MB detection limit.');
+    apiEndpoint('/api/detect-profanity'); // fail fast on a bad backend URL
+    const blob = await sourceBlobForUpload();
+    checkUploadSize(blob);
     const data = new FormData();
-    data.append('file',blob,'video.mp4');
-    const result = await fetch(endpoint,{method:'POST',body:data});
-    const json = await result.json();
-    if (!result.ok) throw new Error(json.detail || 'AI detection failed.');
+    data.append('file', blob, 'video.mp4');
+    const json = await apiJson('/api/detect-profanity', {method:'POST', body:data});
     const suggestions = Array.isArray(json.suggestions) ? json.suggestions : [];
+    let added = 0;
     for (const item of suggestions) {
       if (!Number.isFinite(item.from) || !Number.isFinite(item.to)) continue;
       if (item.to <= item.from || item.from >= video.duration) continue;
       ranges.push({from:Math.max(0,item.from),to:Math.min(video.duration,item.to),mode:'bleep'});
+      added++;
     }
-    ranges.sort((a,b)=>a.from-b.from);
+    mergeRanges();
     renderRanges();
-    report.textContent = suggestions.length
-      ? suggestions.length + ' possible swear word(s) added as beeps. Review each interval and remove false positives before export.'
-      : 'No swear words detected. You can still add manual beeps.';
+    const note = json.truncated ? ' Only the first ' + Math.round(json.analyzed_seconds) + ' s of the video were analysed.' : '';
+    report.textContent = (added
+      ? added + ' possible swear word(s) added as beeps. Review each interval and remove false positives before export.'
+      : 'No swear words detected. You can still add manual beeps.') + note;
   } catch (error) {
     report.textContent = error.message || 'AI detection failed. Manual censoring remains available.';
   } finally {
@@ -843,7 +932,7 @@ byId('add').addEventListener('click', () => {
   try {
     const interval = readInterval('from', 'to', 'The censor');
     ranges.push({...interval, mode: byId('mode').value});
-    ranges.sort((a, b) => a.from - b.from);
+    mergeRanges();
     renderRanges();
     say('Censor added. Preview the cut to check the timing.');
   } catch (error) {
@@ -863,25 +952,31 @@ function cropSourceRect(settings, width, height) {
   const w=width/settings.zoom, h=height/settings.zoom;
   return {sx:(width-w)*settings.x,sy:(height-h)*settings.y,sw:w,sh:h};
 }
+function pictureBox() {
+  // The letterboxed picture rectangle inside .screen, in CSS pixels: this is exactly what the exported frame shows.
+  const screen = document.querySelector('.screen').getBoundingClientRect();
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
+  const ratio = Math.min(screen.width / vw, screen.height / vh);
+  const w = vw * ratio, h = vh * ratio;
+  return {w, h, left: (screen.width - w) / 2, top: (screen.height - h) / 2};
+}
+function cropPreviewTransform(settings, box) {
+  // Same sub-rectangle as cropSourceRect(), expressed as scale() about the centre plus a translation.
+  const z = settings.zoom;
+  return {x: (.5 - settings.x) * (z - 1) * box.w, y: (.5 - settings.y) * (z - 1) * box.h, scale: z};
+}
 function applyCropPreview() {
-  const settings=cropSettings();
-  byId('cropControls').hidden=!settings.enabled;
-  byId('cropZoomLabel').textContent=settings.zoom.toFixed(2)+'×';
-  video.classList.toggle('crop-active',settings.enabled);
-  if(!settings.enabled){video.style.transform='';video.style.objectFit='contain';return;}
-  // CSS object-fit cover establishes the same framing as the canvas export.
-  video.style.objectFit='cover';
-  const w=video.videoWidth||1,h=video.videoHeight||1;
-  const box=byId('video').getBoundingClientRect();
-  const scale=Math.max(box.width/w,box.height/h);
-  const coverW=w*scale,coverH=h*scale;
-  const visibleW=box.width/scale,visibleH=box.height/scale;
-  const rect=cropSourceRect(settings,w,h);
-  // Match canvas crop by applying a normalized translation and scale to the covered video.
-  const factor=settings.zoom;
-  const offsetX=(0.5-settings.x)*(factor-1)*100/factor;
-  const offsetY=(0.5-settings.y)*(factor-1)*100/factor;
-  video.style.transform='translate('+offsetX+'%,'+offsetY+'%) scale('+factor+')';
+  const settings = cropSettings();
+  byId('cropControls').hidden = !settings.enabled;
+  byId('cropZoomLabel').textContent = settings.zoom.toFixed(2) + '×';
+  video.classList.toggle('crop-active', settings.enabled);
+  const frame = byId('videoFrame');
+  if (!settings.enabled) { video.style.transform = ''; frame.style.clipPath = ''; return; }
+  const box = pictureBox();
+  const t = cropPreviewTransform(settings, box);
+  video.style.transform = 'translate(' + t.x + 'px,' + t.y + 'px) scale(' + t.scale + ')';
+  // Hide anything the export would crop away, including the letterbox bars.
+  frame.style.clipPath = 'inset(' + box.top + 'px ' + box.left + 'px ' + box.top + 'px ' + box.left + 'px)';
 }
 for(const id of ['cropEnabled','cropZoom','cropX','cropY']){
   byId(id).addEventListener('input',()=>{applyCropPreview();clearDownload();});
@@ -905,10 +1000,11 @@ function draw(teaser, transitionProgress = 0, transitionIncoming = false) {
     const x = Math.round((canvas.width - width) * mask.x);
     const y = Math.round((canvas.height - height) * mask.y);
     if (mask.pixelate && width && height) {
-      const sourceX = x * video.videoWidth / canvas.width;
-      const sourceY = y * video.videoHeight / canvas.height;
-      maskContext.drawImage(video, sourceX, sourceY, width * video.videoWidth / canvas.width,
-        height * video.videoHeight / canvas.height, 0, 0, maskCanvas.width, maskCanvas.height);
+      // The mask lives in output-frame coordinates, so map it through the crop to find the source pixels beneath it.
+      const view = crop?.enabled ? cropSourceRect(crop, video.videoWidth, video.videoHeight)
+        : {sx: 0, sy: 0, sw: video.videoWidth, sh: video.videoHeight};
+      maskContext.drawImage(video, view.sx + x / canvas.width * view.sw, view.sy + y / canvas.height * view.sh,
+        width / canvas.width * view.sw, height / canvas.height * view.sh, 0, 0, maskCanvas.width, maskCanvas.height);
       ctx.save();
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(maskCanvas, x, y, width, height);
@@ -965,11 +1061,12 @@ function drawReactionEffect(time) {
   if(!item)return;
   const text=(item.text||'').trim().slice(0,55);
   if(!text&&!item.emoji&&!item.image)return;
-  if(item.image&&item.image.complete&&item.image.naturalWidth){
+  const imageW=item.image?(item.image.naturalWidth||item.image.width):0,imageH=item.image?(item.image.naturalHeight||item.image.height):0;
+  if(item.image&&item.image.complete!==false&&imageW&&imageH){
     const maxWidth=canvas.width*Math.min(.8,Math.max(.15,item.imageSize||.38));
     const maxHeight=canvas.height*.45;
-    const ratio=Math.min(maxWidth/item.image.naturalWidth,maxHeight/item.image.naturalHeight);
-    const w=item.image.naturalWidth*ratio,h=item.image.naturalHeight*ratio;
+    const ratio=Math.min(maxWidth/imageW,maxHeight/imageH);
+    const w=imageW*ratio,h=imageH*ratio;
     const cy=canvas.height*(item.position==='top'?.27:item.position==='bottom'?.7:.43);
     ctx.drawImage(item.image,(canvas.width-w)/2,cy-h/2,w,h);
   }
@@ -1014,7 +1111,24 @@ const memeSoundCombos={
  confused:{emoji:'🤔',sound:'scratch',text:'HUH?!'},
  reveal:{emoji:'🤯',sound:'reveal',text:'PLOT TWIST!'}
 };
+const MIN_EFFECT_GAP=.3;
+// One reaction on screen at a time: an earlier one is trimmed to end where the next begins, so every picture keeps exactly its own sound.
+function addReactionEffect(effect){
+  const ordered=[...reactionEffects,effect].sort((a,b)=>a.from-b.from);
+  const index=ordered.indexOf(effect),previous=ordered[index-1],next=ordered[index+1];
+  const reject={ok:false,reason:'Reactions must start at least '+MIN_EFFECT_GAP+' s apart so each picture keeps its own sound.'};
+  const overlapsPrevious=previous&&previous.from+previous.duration>effect.from;
+  if(overlapsPrevious&&effect.from-previous.from<MIN_EFFECT_GAP)return reject;
+  if(next&&effect.from+effect.duration>next.from){
+    if(next.from-effect.from<MIN_EFFECT_GAP)return reject;
+    effect.duration=next.from-effect.from;
+  }
+  if(overlapsPrevious)previous.duration=effect.from-previous.from;
+  reactionEffects.splice(0,reactionEffects.length,...ordered);
+  return {ok:true};
+}
 byId('effectCombo').addEventListener('change',event=>{
+  if(failedMemes.has(event.target.value)){byId('effectComboStatus').textContent='That built-in graphic did not load. Pick another or import your own picture.';return;}
   const combo=memeSoundCombos[event.target.value];
   if(!combo){byId('effectComboStatus').textContent='Custom mode: select your own image, emoji and sound.';return;}
   byId('effectEmoji').value=combo.emoji;
@@ -1031,8 +1145,8 @@ byId('addEffect').addEventListener('click',()=>{
   if(!loaded||(!text&&!byId('effectEmoji').value&&!importedMemeImage&&byId('effectSound').value==='none')||!Number.isFinite(from)||!Number.isFinite(duration)||from<0||from>=video.duration||duration<.2||duration>10){
     say('Load a video, enter reaction text, a valid start time and a duration from 0.2 to 10 seconds.');return;
   }
-  reactionEffects.push({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value,soundBuffer:byId('effectSound').value==='imported'?importedEffectBuffer:null,image:importedMemeImage,imageName:importedMemeName,imageSize:Number(byId('effectImageSize').value)/100});
-  reactionEffects.sort((a,b)=>a.from-b.from);
+  const result=addReactionEffect({text,from,duration:Math.min(duration,video.duration-from),position:byId('effectPosition').value,sound:byId('effectSound').value,emoji:byId('effectEmoji').value,soundBuffer:byId('effectSound').value==='imported'?importedEffectBuffer:null,image:importedMemeImage,imageName:importedMemeName,imageSize:Number(byId('effectImageSize').value)/100});
+  if(!result.ok){say(result.reason);return;}
   renderReactionEffects();clearDownload();say('Reaction added. Use Preview to check it before export.');
 });
 
@@ -1046,7 +1160,7 @@ byId('addEffect').addEventListener('click',()=>{
     const data=await response.json();
     for(const clip of data.clips||[]){
       const row=document.createElement('p'),link=document.createElement('a');
-      link.href=clip.source_url;link.target='_blank';link.rel='noopener noreferrer';
+      {const safe=safeHref(clip.source_url);if(safe)link.href=safe;}link.target='_blank';link.rel='noopener noreferrer';
       link.textContent=clip.title;
       row.append(link,document.createTextNode(' — '+clip.reaction+' · suggested sound: '+clip.suggested_sound));
       root.append(row);
@@ -1066,7 +1180,7 @@ byId('addEffect').addEventListener('click',()=>{
     const data=await response.json();
     for(const item of data.items||[]){
       const row=document.createElement('p'),link=document.createElement('a');
-      link.href=item.source_url;link.target='_blank';link.rel='noopener noreferrer';
+      {const safe=safeHref(item.source_url);if(safe)link.href=safe;}link.target='_blank';link.rel='noopener noreferrer';
       link.textContent=item.title;
       const suggestion=document.createElement('span');
       suggestion.textContent=' — suggested sound: '+item.suggested_sound+' · ';
@@ -1079,24 +1193,32 @@ byId('addEffect').addEventListener('click',()=>{
 
 byId('effectImageFile').addEventListener('change',async event=>{
   const file=event.target.files?.[0];if(!file)return;
-  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>5*1024*1024){
-    byId('effectImageStatus').textContent='Choose a PNG, JPG or WebP under 5 MB.';return;
+  if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)||file.size>5*1024*1024){
+    byId('effectImageStatus').textContent='Choose a PNG, JPG, WebP or GIF under 5 MB.';return;
   }
   const url=URL.createObjectURL(file);
   try{
     const img=new Image();img.src=url;await img.decode();
     if(img.naturalWidth>4096||img.naturalHeight>4096)throw Error('Maximum picture dimensions: 4096px.');
-    importedMemeImage=img;importedMemeName=file.name;
-    byId('effectImageStatus').textContent='Ready: '+file.name+'. Add an effect to pair the picture with a sound.';
+    // Keep a small copy (max 1024 px): a decoded 4096 px picture alone needs 64 MB, enough to crash Safari on a phone.
+    // For a GIF this is the first frame; animated GIFs cannot be drawn into the exported video.
+    const scale=Math.min(1,1024/Math.max(img.naturalWidth,img.naturalHeight));
+    const small=document.createElement('canvas');
+    small.width=Math.max(1,Math.round(img.naturalWidth*scale));small.height=Math.max(1,Math.round(img.naturalHeight*scale));
+    small.getContext('2d').drawImage(img,0,0,small.width,small.height);
+    importedMemeImage=small;importedMemeName=file.name;
+    byId('effectImageStatus').textContent='Ready: '+file.name+(file.type==='image/gif'?' (GIF: the first frame is used; animation is not supported).':'.')+' Add an effect to pair the picture with a sound.';
   }catch(error){importedMemeImage=null;byId('effectImageStatus').textContent='Picture failed: '+error.message;}
   finally{URL.revokeObjectURL(url);}
 });
 
 let effectSoundNodes=[];
 
+// iOS and some Android pickers report an empty MIME type, so fall back to the extension.
+const isAudioFile=file=>file.type.startsWith('audio/')||/\.(mp3|wav|m4a|aac|ogg|oga|flac|caf)$/i.test(file.name);
 byId('effectAudioFile').addEventListener('change',async event=>{
   const file=event.target.files?.[0];if(!file)return;
-  if(file.size>8*1024*1024||(!file.type.startsWith('audio/')&&!/\\.(mp3|wav|m4a|ogg)$/i.test(file.name))){
+  if(file.size>8*1024*1024||!isAudioFile(file)){
     byId('effectAudioStatus').textContent='Choose an audio file under 8 MB.';return;
   }
   try{
@@ -1116,7 +1238,7 @@ byId('effectAudioFile').addEventListener('change',async event=>{
     const data=await response.json();
     for(const item of data.items||[]){
       const p=document.createElement('p'),a=document.createElement('a');
-      a.href=item.source_url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=item.title;
+      {const safe=safeHref(item.source_url);if(safe)a.href=safe;}a.target='_blank';a.rel='noopener noreferrer';a.textContent=item.title;
       p.append(a);root.append(p);
     }
   }catch{root.textContent='Catalogue unavailable offline.';}
@@ -1145,57 +1267,100 @@ function playEffectSound(kind,buffer){
   osc.start(start);osc.stop(start+.38);
 }
 
-const autoMemeRules=[
- {id:'suspicious',re:/\b(suspicious|lying|lie|fake|seriously)\b/i},
- {id:'shocked',re:/\b(wait|what|really|shocked|unbelievable)\b/i},
- {id:'laugh',re:/\b(laugh|funny|joke|hilarious|ridiculous)\b/i},
- {id:'awkward',re:/\b(stop|leave|enough|awkward|silence)\b/i},
- {id:'confused',re:/\b(confused|why|how|explain)\b/i},
- {id:'reveal',re:/\b(finally|revealed|surprise|truth)\b/i}
-];
+// Cue words are scored: a strong cue is worth 3, a weak one 1, emphatic punctuation adds up to 2. A reaction needs 3+,
+// so everyday words such as "what", "how" or "stop" never fire on their own.
+const REACTION_RULES={
+  laugh:{strong:['hilarious','lol|lmao|rofl|ha ?ha+','so funny','just kidding|you(?:\'re| are) joking','cracking up|dying laughing'],weak:['funny','laugh\\w*','jokes?','ridiculous','absurd']},
+  suspicious:{strong:['you(?:\'re| are) lying','liars?','that\'?s a lie','sus','suspicious','fishy','doesn\'?t add up','yeah,? right','fake news'],weak:['lying','lies?','fake','allegedly']},
+  shocked:{strong:['no way','unbelievable','oh my god|omg','can\'?t believe|cannot believe','are you kidding','wow|whoa','shocking'],weak:['wait','what','really','seriously','unreal']},
+  awkward:{strong:['awkward','cringe','uncomfortable','crickets'],weak:['silence','silent','stop','enough','leave']},
+  confused:{strong:['don\'?t understand|do not understand','makes? no sense|doesn\'?t make sense','confus(?:ed|ing)','what does that mean','how is that possible','huh'],weak:['why','how','explain']},
+  reveal:{strong:['plot twist','turns out','the truth is|truth was|truth about','revealed|reveals?','guess what','surprise'],weak:['finally','truth','secret','actually']}
+};
+for(const rule of Object.values(REACTION_RULES)){
+  rule.strong=rule.strong.map(s=>new RegExp('\\b(?:'+s+')\\b','i'));
+  rule.weak=rule.weak.map(s=>new RegExp('\\b(?:'+s+')\\b','i'));
+}
+function classifyReaction(text){
+  const t=String(text||'');if(!t.trim())return null;
+  let best=null;
+  for(const [id,rule] of Object.entries(REACTION_RULES)){
+    let score=0;
+    for(const re of rule.strong)if(re.test(t))score+=3;
+    for(const re of rule.weak)if(re.test(t))score+=1;
+    if(score){if(/[!?]/.test(t))score+=1;if(/\?!|!\?|!!/.test(t))score+=1;}
+    if(score>=3&&(!best||score>best.score))best={id,score};
+  }
+  return best;
+}
+// Footage of real harm must never get a comedic sting (see docs/EFFECTS_LIBRARY.md): skip moments near sensitive talk.
+const SENSITIVE_RE=/\b(kill(?:ed|ing|er|ers|s)?|dead|death|deaths|died|dies|dying|murder\w*|shoot(?:ing|ings|er|ers)?|shot|stab\w*|rape[ds]?|rapist|assault\w*|suicide|funeral|victims?|massacre\w*|genocide|bomb\w*|terror\w*|hostages?|tragedy|tragic|casualt\w+|abus\w+|injur\w+|wounded|war crimes?|cancer|overdose|disaster)\b/i;
+const SENSITIVE_WINDOW=8,MAX_AUTO_MEMES=6,MIN_AUTO_GAP=2.5;
+function reactionCandidates(segments,duration,unavailable){
+  const sensitive=segments.filter(s=>SENSITIVE_RE.test(s.text||''));
+  const nearSensitive=t=>sensitive.some(s=>t>=Number(s.from)-SENSITIVE_WINDOW&&t<=Number(s.to)+SENSITIVE_WINDOW);
+  const candidates=[];let skippedSensitive=0;
+  for(const segment of segments){
+    const from=Number(segment.from),hit=classifyReaction(segment.text);
+    if(!hit||!Number.isFinite(from)||from<0||from>=duration||unavailable.has(hit.id))continue;
+    if(nearSensitive(from)){skippedSensitive++;continue;}
+    candidates.push({from,id:hit.id,score:hit.score});
+  }
+  return {candidates,skippedSensitive};
+}
+function planAutoMemes(segments,duration,unavailable=new Set()){
+  const {candidates,skippedSensitive}=reactionCandidates(segments,duration,unavailable);
+  candidates.sort((a,b)=>b.score-a.score||a.from-b.from); // strongest moments first, wherever they are in the clip
+  const picks=[];
+  for(const c of candidates){
+    if(picks.length>=MAX_AUTO_MEMES)break;
+    if(picks.every(p=>Math.abs(p.from-c.from)>=MIN_AUTO_GAP))picks.push(c);
+  }
+  picks.sort((a,b)=>a.from-b.from);
+  return {picks,skippedSensitive};
+}
 function autoInsertMemes(){
- if(!byId('autoMemes').checked||!loaded||!subtitleSegments.length)return;
- reactionEffects.splice(0,reactionEffects.length,...reactionEffects.filter(e=>!e.autoMeme));
- let count=0,last=-10;
- for(const segment of subtitleSegments){
-   const from=Number(segment.from),rule=autoMemeRules.find(r=>r.re.test(segment.text||''));
-   if(!rule||!Number.isFinite(from)||from<0||from>=video.duration||from-last<2.5)continue;
-   if(reactionEffects.some(e=>Math.abs(e.from-from)<1.5))continue;
-   const combo=memeSoundCombos[rule.id];
-   reactionEffects.push({text:combo.text,from,duration:Math.min(1.5,video.duration-from),position:'center',sound:combo.sound,image:builtInMemes[rule.id],imageName:rule.id+' (built-in)',imageSize:.38,autoMeme:true});
-   last=from;count++;if(count>=6)break;
- }
- reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();
- byId('autoMemeStatus').textContent=count+' meme-and-sound moments added automatically. Preview and remove any unsuitable ones.';
+  if(!byId('autoMemes').checked||!loaded||!subtitleSegments.length)return;
+  reactionEffects.splice(0,reactionEffects.length,...reactionEffects.filter(e=>!e.autoMeme));
+  const {picks,skippedSensitive}=planAutoMemes(subtitleSegments,video.duration,failedMemes);
+  let count=0;
+  for(const pick of picks){
+    if(reactionEffects.some(e=>Math.abs(e.from-pick.from)<1.5))continue;
+    const combo=memeSoundCombos[pick.id];
+    const result=addReactionEffect({text:combo.text,from:pick.from,duration:Math.min(1.5,video.duration-pick.from),position:'center',sound:combo.sound,image:builtInMemes[pick.id],imageName:pick.id+' (built-in)',imageSize:.38,autoMeme:true});
+    if(result.ok)count++;
+  }
+  renderReactionEffects();clearDownload();
+  byId('autoMemeStatus').textContent=(count?count+' meme-and-sound moments added automatically. Preview and remove any unsuitable ones.':'No clear reaction moments found; add effects manually.')
+    +(skippedSensitive?' '+skippedSensitive+' moment(s) near sensitive topics were skipped on purpose.':'');
 }
 byId('autoMemes').addEventListener('change',()=>{if(byId('autoMemes').checked)autoInsertMemes();});
 
 byId('suggestEffects').addEventListener('click',()=>{
   const root=byId('effectSuggestions');root.replaceChildren();
   if(!loaded||!subtitleSegments.length){byId('effectStatus').textContent='Use Auto Transcribe Speech in Subtitles first.';return;}
-  const patterns=[
-    {re:/\b(wait|what|really|seriously)\b/i,text:'WAIT... WHAT?!',sound:'boom',emoji:'😱'},
-    {re:/\b(stop|leave|enough|shout)\b/i,text:'HOLD UP!',sound:'scratch',emoji:'👀'},
-    {re:/\b(finally|revealed|surprise|truth)\b/i,text:'THE REVEAL',sound:'reveal',emoji:'🤯'},
-    {re:/\b(laugh|funny|joke|hilarious)\b/i,text:'NO WAY!',sound:'reveal',emoji:'🤣'},
-    {re:/\b(confused|why|how|explain)\b/i,text:'HUH?!',sound:'scratch',emoji:'🤔'},
-    {re:/\b(suspicious|lying|lie|fake)\b/i,text:'SUS?!',sound:'boom',emoji:'👀'}
-  ];
+  const {candidates,skippedSensitive}=reactionCandidates(subtitleSegments,video.duration,failedMemes);
+  candidates.sort((a,b)=>a.from-b.from);
   let count=0,last=-10;
-  for(const segment of subtitleSegments){
-    const from=Number(segment.from),hit=patterns.find(p=>p.re.test(segment.text||''));
-    if(!hit||!Number.isFinite(from)||from<0||from>=video.duration||from-last<1.5)continue;
-    last=from;count++;
+  for(const hit of candidates){
+    if(hit.from-last<1.5)continue;
+    last=hit.from;count++;
+    const combo=memeSoundCombos[hit.id];
     const row=document.createElement('div');row.className='subtitle-row';
-    const label=document.createElement('span');label.textContent=from.toFixed(1)+'s · '+hit.text+' · '+hit.sound;
+    const label=document.createElement('span');label.textContent=hit.from.toFixed(1)+'s · '+combo.text+' · '+combo.sound;
     const approve=document.createElement('button');approve.type='button';approve.textContent='Approve';
-    approve.onclick=()=>{reactionEffects.push({text:hit.text,from,duration:1.5,position:'center',sound:hit.sound,emoji:hit.emoji});reactionEffects.sort((a,b)=>a.from-b.from);renderReactionEffects();clearDownload();row.remove();};
+    approve.onclick=()=>{
+      const result=addReactionEffect({text:combo.text,from:hit.from,duration:1.5,position:'center',sound:combo.sound,emoji:combo.emoji});
+      if(!result.ok){byId('effectStatus').textContent=result.reason;return;}
+      renderReactionEffects();clearDownload();row.remove();
+    };
     const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='Dismiss';dismiss.onclick=()=>row.remove();
     row.append(label,approve,dismiss);root.append(row);
     if(count>=8)break;
   }
   if(byId('autoMemes').checked)autoInsertMemes();
-  byId('effectStatus').textContent=count?count+' suggested moments. Review each before approving.':'No matching dialogue found; add effects manually.';
+  byId('effectStatus').textContent=(count?count+' suggested moments. Review each before approving.':'No matching dialogue found; add effects manually.')
+    +(skippedSensitive?' '+skippedSensitive+' near sensitive topics were left out.':'');
 });
 
 function seekTo(time, signal) {
@@ -1230,6 +1395,7 @@ function setAudio(time) {
 function playSegment(segment, onTick, signal) {
   return new Promise((resolve, reject) => {
     let interval;
+    let lastDraw=0;
     const playedEffects=new Set();
     function finish(error) {
       clearInterval(interval);
@@ -1245,8 +1411,9 @@ function playSegment(segment, onTick, signal) {
       const time = video.currentTime;
       if (video.ended || time >= segment.to) return finish();
       setAudio(time);
-      reactionEffects.forEach((item,index)=>{if(item.sound&&item.sound!=='none'&&!playedEffects.has(index)&&time>=item.from&&time<item.from+.15){playedEffects.add(index);playEffectSound(item.sound,item.soundBuffer);}});
-      if (video.readyState >= 2) {
+      reactionEffects.forEach((item,index)=>{if(item.sound&&item.sound!=='none'&&!playedEffects.has(index)&&time>=item.from&&time<item.from+SOUND_WINDOW){playedEffects.add(index);playEffectSound(item.sound,item.soundBuffer);}});
+      if (video.readyState >= 2 && performance.now() - lastDraw >= DRAW_INTERVAL_MS) {
+        lastDraw = performance.now();
         const transitionLength = Math.min(transitionSeconds(), (segment.to-segment.from)*.45);
         const transitionProgress = segment.teaser && transitionLength > 0
           ? Math.max(0, (time - (segment.to-transitionLength))/transitionLength)
@@ -1264,7 +1431,7 @@ function playSegment(segment, onTick, signal) {
   });
 }
 
-function makeRecorder() {
+function makeRecorder(bitsPerSecond = 6500000) {
   if (!window.MediaRecorder || !canvas.captureStream) {
     throw new Error('Video export is unavailable in this browser. Try a current version of Safari, Chrome or Edge.');
   }
@@ -1277,7 +1444,7 @@ function makeRecorder() {
     'video/webm'
   ].find(format => MediaRecorder.isTypeSupported(format));
   try {
-    const recorder = new MediaRecorder(stream, {mimeType: type || undefined, videoBitsPerSecond: 6500000});
+    const recorder = new MediaRecorder(stream, {mimeType: type || undefined, videoBitsPerSecond: bitsPerSecond});
     const chunks = [];
     recorder.addEventListener('dataavailable', event => {
       if (event.data.size) chunks.push(event.data);
@@ -1351,6 +1518,8 @@ async function run(exporting) {
       maskCanvas.width = Math.max(1, Math.round(canvas.width * watermarkSettings.mask.width / 14));
       maskCanvas.height = Math.max(1, Math.round(canvas.height * watermarkSettings.mask.height / 14));
     }
+    const plan = planExport(duration, canvas.width, canvas.height);
+    if (exporting && !plan.ok) throw new Error(plan.message);
     for (const segment of segments) {
       await seekTo(segment.from, signal);
       draw(segment.teaser);
@@ -1359,7 +1528,7 @@ async function run(exporting) {
       if (exporting) {
         if (recording) recording.recorder.resume();
         else {
-          recording = makeRecorder();
+          recording = makeRecorder(plan.bitsPerSecond);
           recording.recorder.start(500);
         }
       }
@@ -1518,15 +1687,10 @@ byId('transcribeSubtitles').addEventListener('click',async()=>{
   transcribingSubtitles=true;setControls();
   byId('subtitleStatus').textContent='Transcribing spoken words with cloud AI…';
   try{
-    const response=await fetch(video.src);
-    if(!response.ok)throw new Error('Could not read the video.');
-    const blob=await response.blob();
-    if(blob.size>80*1024*1024)throw new Error('Video exceeds the 80 MB limit.');
+    apiEndpoint('/api/transcribe-subtitles'); // fail fast on a bad backend URL
+    const blob=await sourceBlobForUpload();checkUploadSize(blob);
     const data=new FormData();data.append('file',blob,'video.mp4');
-    const api=byId('apiUrl').value.trim()||'https://clash-of-nation.onrender.com';
-    const result=await fetch(new URL('/api/transcribe-subtitles',api),{method:'POST',body:data});
-    const json=await result.json();
-    if(!result.ok)throw new Error(json.detail||'Transcription failed.');
+    const json=await apiJson('/api/transcribe-subtitles',{method:'POST',body:data});
     subtitleSegments.length=0;
     for(const item of json.segments||[]){
       if(Number.isFinite(item.from)&&Number.isFinite(item.to)&&item.to>item.from)
@@ -1534,8 +1698,9 @@ byId('transcribeSubtitles').addEventListener('click',async()=>{
     }
     renderSubtitleRows();updateSubtitleOverlay();
     if(byId('autoMemes').checked)autoInsertMemes();
+    const note=json.truncated?' (first '+Math.round(json.analyzed_seconds)+' s only; the rest of the video was not transcribed)':'';
     byId('subtitleStatus').textContent=subtitleSegments.length
-      ? subtitleSegments.length+' subtitle segments ready. Review the text and timing before exporting.'
+      ? subtitleSegments.length+' subtitle segments ready'+note+'. Review the text and timing before exporting.'
       : 'No speech detected. Add subtitles manually or disable subtitles before export.';
   }catch(error){byId('subtitleStatus').textContent=error.message||'Transcription failed.';}
   finally{transcribingSubtitles=false;setControls();}
@@ -1554,12 +1719,9 @@ async function fetchSourceCaption(url) {
   byId('sourceCaption').value = '';
   byId('captionStatus').textContent = 'Looking for the original post caption…';
   try {
-    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
-    const response = await fetch(new URL('/api/source-caption',api), {
+    const result = await apiJson('/api/source-caption', {
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})
-    });
-    if (!response.ok) throw new Error('Original caption could not be retrieved.');
-    const result = await response.json();
+    }, 40000);
     byId('sourceCaption').value = result.caption || '';
     byId('captionCredit').value = result.uploader || '';
     byId('captionStatus').textContent = result.caption
@@ -1581,13 +1743,10 @@ async function generateSocialCaption() {
   button.disabled = true;
   byId('captionStatus').textContent = 'Generating three caption options…';
   try {
-    const api = byId('apiUrl').value.trim() || 'https://clash-of-nation.onrender.com';
-    const response = await fetch(new URL('/api/generate-caption',api),{
+    const result = await apiJson('/api/generate-caption',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({source_caption,video_context,platform:byId('captionPlatform').value,credit:byId('captionCredit').value.trim()})
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || 'Caption generation failed.');
     const variants = Array.isArray(result.variants) ? result.variants : [];
     const root=byId('captionVariants');
     root.replaceChildren();
