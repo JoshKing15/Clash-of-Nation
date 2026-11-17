@@ -112,6 +112,68 @@ def busy():
                          headers={"Retry-After": "15"})
 
 
+# ASGI upload guard executes before FastAPI parses multipart data.
+# Content-Length is an early rejection hint; streamed bytes are also bounded.
+class UploadRequestGuard:
+    PATHS = frozenset(("/api/detect-profanity", "/api/transcribe-subtitles"))
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("path") not in self.PATHS or scope.get("method") != "POST":
+            return await self.app(scope, receive, send)
+        from starlette.responses import JSONResponse
+        request = Request(scope)
+        try:
+            rate_limit(request)
+        except HTTPException as exc:
+            return await JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                                      headers=exc.headers)(scope, receive, send)
+        headers = dict(scope.get("headers", ()))
+        raw_length = headers.get(b"content-length")
+        # Multipart overhead is small, but allow a little room for form headers.
+        max_request_bytes = MAX_BYTES + 1024 * 1024
+        if raw_length:
+            try:
+                declared = int(raw_length)
+            except ValueError:
+                declared = -1
+            if declared < 0 or declared > max_request_bytes:
+                return await JSONResponse({"detail": "Upload exceeds 80 MB."}, status_code=413)(scope, receive, send)
+
+        total = 0
+        response_started = False
+
+        class TooLarge(Exception):
+            pass
+
+        async def bounded_receive():
+            nonlocal total
+            message = await receive()
+            if message["type"] == "http.request":
+                total += len(message.get("body", b""))
+                if total > max_request_bytes:
+                    raise TooLarge()
+            return message
+
+        async def guarded_send(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, bounded_receive, guarded_send)
+        except TooLarge:
+            if not response_started:
+                await JSONResponse({"detail": "Upload exceeds 80 MB."}, status_code=413)(scope, receive, send)
+            else:
+                raise
+
+
+app.add_middleware(UploadRequestGuard)
+
+
 class DownloadRequest(BaseModel):
     url: str
 
@@ -381,8 +443,10 @@ async def _run_upload_job(file: UploadFile, prefix: str, work):
         raise HTTPException(status_code=503, detail="Cloud AI is not configured: add GROQ_API_KEY to the backend environment.")
     if not _is_video_upload(file):
         raise HTTPException(status_code=400, detail="Upload an MP4, MOV, M4V, WebM or other video file.")
-    with tempfile.TemporaryDirectory(prefix=prefix) as folder:
-        video_path = str(pathlib.Path(folder) / "source.mp4")
+    folder = tempfile.TemporaryDirectory(prefix=prefix)
+    worker_owns_folder = False
+    try:
+        video_path = str(pathlib.Path(folder.name) / "source.mp4")
         size = 0
         with open(video_path, "wb") as output:
             while chunk := await file.read(1024 * 1024):
@@ -394,8 +458,19 @@ async def _run_upload_job(file: UploadFile, prefix: str, work):
             raise HTTPException(status_code=400, detail="Empty video.")
         if not JOBS.try_acquire():
             raise busy()
+
+        def run_and_release():
+            try:
+                return work(video_path, str(pathlib.Path(folder.name) / "audio.mp3"))
+            finally:
+                JOBS.release()
+                folder.cleanup()
+
+        # Once submitted, the worker owns the slot and temporary files, even if
+        # wait_for times out and the HTTP request is already finished.
+        worker_owns_folder = True
         try:
-            return await asyncio.wait_for(asyncio.to_thread(work, video_path, str(pathlib.Path(folder) / "audio.mp3")), timeout=145)
+            return await asyncio.wait_for(asyncio.to_thread(run_and_release), timeout=145)
         except UserFacing as exc:
             raise HTTPException(status_code=422, detail=str(exc)[:220])
         except asyncio.TimeoutError:
@@ -403,17 +478,17 @@ async def _run_upload_job(file: UploadFile, prefix: str, work):
         except Exception as exc:
             log.warning("%s failed: %s: %s", prefix, type(exc).__name__, str(exc)[:300])
             raise HTTPException(status_code=422, detail="This video could not be analysed. Please try again or use a different file.")
-        finally:
-            JOBS.release()
-
+    finally:
+        if not worker_owns_folder:
+            folder.cleanup()
 
 @app.post("/api/detect-profanity")
-async def detect_profanity(file: UploadFile = File(...), _limit=Depends(rate_limit)):
+async def detect_profanity(file: UploadFile = File(...)):
     return await _run_upload_job(file, "clash-ai-", transcribe_audio)
 
 
 @app.post("/api/transcribe-subtitles")
-async def transcribe_subtitles(file: UploadFile = File(...), _limit=Depends(rate_limit)):
+async def transcribe_subtitles(file: UploadFile = File(...)):
     return await _run_upload_job(file, "clash-sub-", subtitle_transcription)
 
 
