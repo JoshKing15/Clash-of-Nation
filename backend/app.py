@@ -115,7 +115,7 @@ def busy():
 # ASGI upload guard executes before FastAPI parses multipart data.
 # Content-Length is an early rejection hint; streamed bytes are also bounded.
 class UploadRequestGuard:
-    PATHS = frozenset(("/api/detect-profanity", "/api/transcribe-subtitles"))
+    PATHS = frozenset(("/api/detect-profanity", "/api/transcribe-subtitles", "/api/render-transition"))
     def __init__(self, app):
         self.app = app
 
