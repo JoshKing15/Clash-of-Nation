@@ -295,7 +295,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <div class="buttons"><button type="button" id="addEffect">Add reaction overlay</button></div>
 <details><summary>Phoenix Connection sound titles and source links</summary><div id="phoenixCatalog"></div></details><div id="effectRows" aria-live="polite"></div>
 </fieldset>
-<div class="actions"><button type="button" id="preview" data-edit disabled>▶ Preview edited video</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
+<label class="check"><input type="checkbox" id="serverTransition"> Use smooth cloud-rendered teaser transition (beta; basic cuts only, no overlays or censorship)</label><div class="actions"><button type="button" id="preview" data-edit disabled>▶ Preview edited video</button><button type="button" id="export" class="primary" data-edit disabled>Export video</button><button type="button" id="stop" hidden>Stop</button></div>
 <p style="margin:8px 0;color:#b9c2ce">Preview plays the full edited sequence with transitions, beeps, subtitles and watermark before export. Tap Stop to end the preview.</p>
 <progress id="progress" max="1" value="0" hidden></progress>
 <p role="status" id="status">Choose a video to unlock the editor.</p>
@@ -1507,6 +1507,41 @@ function makeRecorder(bitsPerSecond = 6500000) {
   }
 }
 
+async function exportCloudTransition(segments) {
+  if (!sourceFile || !(sourceFile instanceof Blob)) throw new Error('Load a local video file before cloud rendering.');
+  if (segments.length !== 2) throw new Error('Enable a teaser and main clip for cloud rendering.');
+  if (byId('brand').checked || byId('mask').checked || byId('showSubtitles').checked ||
+      ranges.length || reactionEffects.length || cropSettings().enabled) {
+    throw new Error('Cloud rendering currently supports basic teaser cuts only. Turn off watermark, crop, censorship, subtitles and effects, or uncheck cloud rendering to preserve those edits.');
+  }
+  const [teaser, main] = segments;
+  const data = new FormData();
+  data.append('file', sourceFile, sourceFile.name || 'source.mp4');
+  for (const [key, value] of Object.entries({
+    teaser_start: teaser.from, teaser_end: teaser.to,
+    main_start: main.from, main_end: main.to,
+    overlap: transitionSeconds(), mode: byId('transition').value === 'fade' ? 'fade' : 'cut'
+  })) data.append(key, String(value));
+  say('Rendering synchronized teaser audio and video in the cloud…');
+  const response = await fetch(apiEndpoint('/api/render-transition'), {method: 'POST', body: data});
+  if (!response.ok) {
+    let detail = 'Cloud render failed (HTTP ' + response.status + ').';
+    try { detail = (await response.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('Cloud render returned an empty file.');
+  clearDownload();
+  exportUrl = URL.createObjectURL(blob);
+  download.href = exportUrl;
+  download.download = 'clash-of-nations-smooth-transition.mp4';
+  download.textContent = 'Download MP4';
+  download.hidden = false;
+  exportFile = new File([blob], download.download, {type: 'video/mp4'});
+  share.hidden = !navigator.canShare?.({files: [exportFile]});
+  say('Smooth transition export ready. Download or share the MP4.');
+}
+
 async function run(exporting) {
   if (!loaded || running) return;
   let segments;
@@ -1517,6 +1552,16 @@ async function run(exporting) {
       : [main];
   } catch (error) {
     say(error.message);
+    return;
+  }
+  if (exporting && byId('serverTransition').checked) {
+    if (running) return;
+    const job = new AbortController();
+    running = job;
+    setControls();
+    try { await exportCloudTransition(segments); }
+    catch (error) { say(error.message || 'Cloud render failed.'); }
+    finally { running = undefined; setControls(); }
     return;
   }
   if (exporting && byId('showSubtitles').checked && !subtitleSegments.length) {
