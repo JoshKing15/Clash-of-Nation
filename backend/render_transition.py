@@ -46,7 +46,7 @@ def build_render_command(source: str, destination: str, teaser_start: float,
                   f"offset={teaser_length-overlap:.3f}[vout];"
                   f"[a0][a1]acrossfade=d={overlap:.3f}:c1=tri:c2=tri[aout]")
     else:
-        graph += ("[v0][v1]concat=n=2:v=0:a=0[vout];"
+        graph += ("[v0][v1]concat=n=2:v=1:a=0[vout];"
                   "[a0][a1]concat=n=2:v=0:a=1[aout]")
     return [
         "ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-y",
