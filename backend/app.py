@@ -628,3 +628,7 @@ async def generate_caption(request: CaptionRequest, _limit=Depends(rate_limit)):
     except Exception as exc:
         log.warning("caption generation failed: %s: %s", type(exc).__name__, str(exc)[:300])
         raise HTTPException(status_code=502, detail="Caption service failed. Please try again.")
+
+# Opt-in FFmpeg render API; existing browser export remains the default.
+from .render_transition import router as transition_render_router
+app.include_router(transition_render_router)
