@@ -630,5 +630,9 @@ async def generate_caption(request: CaptionRequest, _limit=Depends(rate_limit)):
         raise HTTPException(status_code=502, detail="Caption service failed. Please try again.")
 
 # Opt-in FFmpeg render API; existing browser export remains the default.
-from .render_transition import router as transition_render_router
+try:
+    from .render_transition import router as transition_render_router
+except ImportError:
+    # Tests also import app.py as a top-level module.
+    from render_transition import router as transition_render_router
 app.include_router(transition_render_router)
