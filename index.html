@@ -359,6 +359,7 @@ let sourceFile = null;  // the File/Blob behind the loaded video, when it is loc
 let detectingProfanity = false;
 let transcribingSubtitles = false;
 let suggestingHighlights = false;
+let highlightSourceRevision = 0;
 const subtitleSegments = [];
 const reactionEffects = [];
 let importedEffectBuffer=null;
@@ -494,6 +495,7 @@ function clearDownload() {
 }
 
 function loadSource(url, name, local, blob) {
+  highlightSourceRevision++;
   video.pause();
   loaded = false;
   setControls();
@@ -1771,6 +1773,7 @@ function showHighlightChoices(items) {
 byId('suggestHighlights').addEventListener('click', async () => {
   if (!loaded || running || suggestingHighlights || transcribingSubtitles || !subtitleSegments.length) return;
   suggestingHighlights = true;
+  const requestRevision = highlightSourceRevision;
   setControls();
   byId('highlightStatus').textContent = 'Finding highlight candidates from the transcript…';
   byId('highlightSuggestions').replaceChildren();
@@ -1784,6 +1787,7 @@ byId('suggestHighlights').addEventListener('click', async () => {
           from: Number(item.from), to: Number(item.to), text: String(item.text || '')
         }))})
     });
+    if (!loaded || requestRevision !== highlightSourceRevision) return;
     const clips = (result.clips || []).filter(clip =>
       Number.isFinite(clip.from) && Number.isFinite(clip.to) && clip.to > clip.from &&
       clip.from >= 0 && clip.to <= duration + .01);
