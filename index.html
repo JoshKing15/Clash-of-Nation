@@ -256,7 +256,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <legend><span>04</span> Spoken subtitles</legend>
 <p>Transcribe the video with cloud AI, correct the words and burn timed subtitles into your exported clip.</p>
 <label class="check"><input id="showSubtitles" type="checkbox"> Show subtitles in preview and export</label>
-<div class="buttons" style="margin:10px 0"><button type="button" id="transcribeSubtitles">Auto Transcribe Speech</button><button type="button" id="addSubtitle">Add subtitle manually</button></div>
+<div class="buttons" style="margin:10px 0"><button type="button" id="transcribeSubtitles">Auto Transcribe Speech</button><button type="button" id="addSubtitle">Add subtitle manually</button><button type="button" id="suggestHighlights" disabled>Find 3 Highlight Clips</button></div>
+<p id="highlightStatus" role="status">Transcribe speech first, then find highlight suggestions.</p>
+<div id="highlightSuggestions" aria-live="polite"></div>
 <p id="subtitleStatus" role="status">Load a video to transcribe speech.</p>
 <div class="mask-grid">
 <label>Horizontal position<input id="subtitleX" type="range" min="10" max="90" value="50"></label>
@@ -356,6 +358,7 @@ let pendingLink = null; // a link is only remembered once its video has really l
 let sourceFile = null;  // the File/Blob behind the loaded video, when it is local
 let detectingProfanity = false;
 let transcribingSubtitles = false;
+let suggestingHighlights = false;
 const subtitleSegments = [];
 const reactionEffects = [];
 let importedEffectBuffer=null;
@@ -472,6 +475,7 @@ function setControls() {
   if (running) byId('maskOverlay').hidden = true;
   byId('autoCensor').disabled = !loaded || !!running || detectingProfanity;
   byId('transcribeSubtitles').disabled = !loaded || !!running || transcribingSubtitles;
+  byId('suggestHighlights').disabled = !loaded || !!running || transcribingSubtitles || suggestingHighlights || !subtitleSegments.length;
 }
 
 function updateClock() {
@@ -499,6 +503,8 @@ function loadSource(url, name, local, blob) {
   byId('aiStatus').textContent = 'Use Auto Detect Swear Words to scan the new video.';
   subtitleSegments.length = 0;
   renderSubtitleRows();
+  byId('highlightSuggestions').replaceChildren();
+  byId('highlightStatus').textContent = 'Transcribe speech first, then find highlight suggestions.';
   reactionEffects.length = 0;
   renderReactionEffects();
   importedEffectBuffer=null;importedEffectName='';byId('effectAudioFile').value='';
@@ -1730,6 +1736,69 @@ function drawSubtitle(time) {
   });
   ctx.restore();
 }
+function showHighlightChoices(items) {
+  const container = byId('highlightSuggestions');
+  container.replaceChildren();
+  for (const clip of items) {
+    const line = document.createElement('div');
+    line.style.cssText = 'margin:8px 0;padding:10px;border:1px solid #566174;border-radius:8px';
+    const label = document.createElement('p');
+    label.textContent = seconds(clip.from) + '–' + seconds(clip.to) + ' s: ' + clip.excerpt;
+    const apply = document.createElement('button');
+    apply.type = 'button';
+    apply.textContent = 'Use this highlight';
+    apply.addEventListener('click', () => {
+      if (!loaded || running || suggestingHighlights) return;
+      const duration = video.duration;
+      if (!Number.isFinite(clip.from) || !Number.isFinite(clip.to) ||
+          clip.from < 0 || clip.to <= clip.from || clip.to > duration + .01) return;
+      byId('start').value = Number(clip.from.toFixed(2));
+      byId('end').value = Number(Math.min(duration, clip.to).toFixed(2));
+      byId('hook').checked = false;
+      byId('hook').dispatchEvent(new Event('change'));
+      video.pause();
+      video.currentTime = clip.from;
+      clearDownload();
+      say('Highlight cut selected. Review the footage, then preview or export.');
+      byId('highlightStatus').textContent = 'Selected ' + seconds(clip.from) + '–' +
+        seconds(clip.to) + ' s. You can adjust the cut or add a teaser manually.';
+    });
+    line.append(label, apply);
+    container.append(line);
+  }
+}
+
+byId('suggestHighlights').addEventListener('click', async () => {
+  if (!loaded || running || suggestingHighlights || transcribingSubtitles || !subtitleSegments.length) return;
+  suggestingHighlights = true;
+  setControls();
+  byId('highlightStatus').textContent = 'Finding highlight candidates from the transcript…';
+  byId('highlightSuggestions').replaceChildren();
+  try {
+    const duration = video.duration;
+    if (!Number.isFinite(duration)) throw new Error('Video duration is not available.');
+    const result = await apiJson('/api/auto-clips', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({duration, length: 30, count: 3,
+        segments: subtitleSegments.map(item => ({
+          from: Number(item.from), to: Number(item.to), text: String(item.text || '')
+        }))})
+    });
+    const clips = (result.clips || []).filter(clip =>
+      Number.isFinite(clip.from) && Number.isFinite(clip.to) && clip.to > clip.from &&
+      clip.from >= 0 && clip.to <= duration + .01);
+    showHighlightChoices(clips);
+    byId('highlightStatus').textContent = clips.length
+      ? clips.length + ' transcript-based highlight suggestions. These are not guaranteed viral clips: review source context before publishing.'
+      : 'No highlight candidates found. Try a video with more dialogue.';
+  } catch (error) {
+    byId('highlightStatus').textContent = error.message || 'Could not suggest highlights.';
+  } finally {
+    suggestingHighlights = false;
+    setControls();
+  }
+});
+
 byId('transcribeSubtitles').addEventListener('click',async()=>{
   if(!loaded||running||transcribingSubtitles)return;
   transcribingSubtitles=true;setControls();
@@ -1740,12 +1809,15 @@ byId('transcribeSubtitles').addEventListener('click',async()=>{
     const data=new FormData();data.append('file',blob,'video.mp4');
     const json=await apiJson('/api/transcribe-subtitles',{method:'POST',body:data});
     subtitleSegments.length=0;
+    byId('highlightSuggestions').replaceChildren();
+    byId('highlightStatus').textContent = 'Transcribe speech first, then find highlight suggestions.';
     for(const item of json.segments||[]){
       if(Number.isFinite(item.from)&&Number.isFinite(item.to)&&item.to>item.from)
         subtitleSegments.push({from:item.from,to:item.to,text:String(item.text||'')});
     }
     renderSubtitleRows();updateSubtitleOverlay();
     if(byId('autoMemes').checked)autoInsertMemes();
+    setControls();
     const note=json.truncated?' (first '+Math.round(json.analyzed_seconds)+' s only; the rest of the video was not transcribed)':'';
     byId('subtitleStatus').textContent=subtitleSegments.length
       ? subtitleSegments.length+' subtitle segments ready'+note+'. Review the text and timing before exporting.'
@@ -1756,7 +1828,7 @@ byId('transcribeSubtitles').addEventListener('click',async()=>{
 byId('addSubtitle').addEventListener('click',()=>{
   const from=loaded?video.currentTime:0;
   subtitleSegments.push({from:Number(from.toFixed(2)),to:Number(Math.min(from+2,video.duration||from+2).toFixed(2)),text:'Edit subtitle'});
-  renderSubtitleRows();updateSubtitleOverlay();
+  renderSubtitleRows();updateSubtitleOverlay();setControls();
 });
 for(const id of ['subtitleX','subtitleY','subtitleSize','subtitleColor','subtitleBackground','showSubtitles','subtitleFont','maskSubtitleProfanity']){
   byId(id).addEventListener('input',updateSubtitleOverlay);
