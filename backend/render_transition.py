@@ -12,7 +12,10 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from .transition_plan import plan_transition
+try:
+    from .transition_plan import plan_transition
+except ImportError:
+    from transition_plan import plan_transition
 
 router = APIRouter()
 
