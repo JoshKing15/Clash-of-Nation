@@ -300,6 +300,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <progress id="progress" max="1" value="0" hidden></progress>
 <p role="status" id="status">Choose a video to unlock the editor.</p>
 <div class="save-actions"><button type="button" id="share" hidden>Save / Share</button><a id="download" hidden>Download edited video</a></div>
+<div id="exportQuality" role="status" aria-live="polite" hidden style="margin-top:10px;padding:12px;border:1px solid var(--edge);border-radius:10px;overflow-wrap:anywhere"></div>
 </section>
 </div>
 <footer>Source times are in seconds. Use headphones to check each bleep before exporting.</footer>
@@ -1447,6 +1448,36 @@ function playSegment(segment, onTick, signal) {
   });
 }
 
+function showExportQuality(blob, duration, outputWidth, outputHeight, extension) {
+  const target = document.getElementById('exportQuality');
+  if (!target) return;
+  const sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
+  const fps = 30; // Requested canvas capture rate; not a measured encoded frame rate.
+  const mb = (blob.size / 1048576).toFixed(1);
+  const notes = [];
+  if (outputWidth < sourceWidth || outputHeight < sourceHeight)
+    notes.push('Output dimensions are smaller than the source; check the export scaling.');
+  if (outputWidth < 720)
+    notes.push('Low output width: quality may appear soft on large phone screens.');
+  if (extension === 'webm')
+    notes.push('WebM output: some social platforms require MP4. Check compatibility before posting.');
+  if (duration > 0 && blob.size / duration < 90000)
+    notes.push('Low average data rate: review the video for compression artifacts.');
+  if (document.visibilityState === 'hidden')
+    notes.push('The browser was backgrounded; check playback for dropped frames.');
+  target.replaceChildren();
+  const heading = document.createElement('strong');
+  heading.textContent = 'Export quality report';
+  target.append(heading);
+  const details = document.createElement('p');
+  details.textContent = `${outputWidth} × ${outputHeight} · ${fps} FPS requested (not verified) · ${extension.toUpperCase()} · ${mb} MiB · ${duration.toFixed(1)} s · source ${sourceWidth} × ${sourceHeight}`;
+  target.append(details);
+  const message = document.createElement('p');
+  message.textContent = notes.length ? 'Checks: ' + notes.join(' ') : 'Basic metadata checks passed. Audio sync, silence, freezes, black borders, and watermark placement require a decoded-file inspection.';
+  target.append(message);
+  target.hidden = false;
+}
+
 function makeRecorder(bitsPerSecond = 6500000) {
   if (!window.MediaRecorder || !canvas.captureStream) {
     throw new Error('Video export is unavailable in this browser. Try a current version of Safari, Chrome or Edge.');
@@ -1566,6 +1597,7 @@ async function run(exporting) {
       download.textContent = 'Download ' + extension.toUpperCase();
       download.hidden = false;
       exportFile = new File([blob], download.download, {type: blob.type.split(';')[0]});
+      showExportQuality(blob, duration, canvas.width, canvas.height, extension);
       share.hidden = !navigator.canShare?.({files: [exportFile]});
       say('Export ready. Use Save / Share for the phone’s share sheet, or Download to save a file.');
     } else {
