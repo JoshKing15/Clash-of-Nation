@@ -628,3 +628,24 @@ async def generate_caption(request: CaptionRequest, _limit=Depends(rate_limit)):
     except Exception as exc:
         log.warning("caption generation failed: %s: %s", type(exc).__name__, str(exc)[:300])
         raise HTTPException(status_code=502, detail="Caption service failed. Please try again.")
+
+# Transcript-based highlight suggestions. This endpoint accepts timestamps and
+# captions already transcribed by the user; it never downloads a source URL.
+from backend.auto_clip import propose_clips
+
+
+class AutoClipRequest(BaseModel):
+    segments: list[dict]
+    duration: float
+    length: float = 30
+    count: int = 3
+
+
+@app.post("/api/auto-clips")
+async def auto_clip_suggestions(payload: AutoClipRequest, _limit=Depends(rate_limit)):
+    try:
+        clips = propose_clips(payload.segments, payload.duration, payload.length, payload.count)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)[:160])
+    return {"clips": clips, "selection_method": "transcript_heuristic",
+            "note": "These are transcript-based suggestions, not verified events or predicted viral scores. Review the source before publishing."}
